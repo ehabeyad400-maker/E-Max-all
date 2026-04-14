@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | النسخة الاحترافية المحدثة</title>
+    <title>E-Max | النسخة الاحترافية</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -15,31 +14,22 @@
 
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --green: #10b981; --warn: #f59e0b; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
         
-        /* شاشات الواجهة */
+        /* واجهة اختيار المركبة */
         #vehicle-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .v-card { background: var(--card); width: 100%; max-width: 350px; padding: 20px; border-radius: 20px; margin: 10px 0; cursor: pointer; border: 2px solid transparent; text-align: center; transition: 0.3s; }
         .v-card:hover { border-color: var(--accent); transform: translateY(-5px); }
 
+        /* واجهة الخريطة */
         #app-ui { display: none; flex-direction: column; height: 100vh; }
-        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         #map { flex-grow: 1; z-index: 1; }
 
-        /* القائمة الجانبية والشات */
-        #side-menu { position: fixed; right: -100%; top: 0; width: 300px; height: 100%; background: var(--card); z-index: 10000; transition: 0.4s; padding: 25px; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
-        #side-menu.active { right: 0; }
-        .menu-section { background: #0f172a; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #334155; }
-
-        #chat-box { position: fixed; bottom: -400px; left: 20px; width: 300px; height: 380px; background: var(--card); z-index: 9000; border-radius: 20px 20px 0 0; transition: 0.4s; display: flex; flex-direction: column; border: 1px solid var(--accent); }
-        #chat-box.active { bottom: 0; }
-        #chat-msgs { flex-grow: 1; padding: 10px; overflow-y: auto; font-size: 14px; background: #0b1120; }
+        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-qr { position: fixed; bottom: 90px; right: 20px; z-index: 100; background: var(--warn); color: white; }
         
         #qr-container { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 20000; flex-direction: column; align-items: center; justify-content: center; }
-
-        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-blue { background: var(--accent); color: white; width: 100%; }
-        .btn-qr { position: fixed; bottom: 90px; right: 20px; z-index: 100; background: var(--warn); color: white; }
     </style>
 </head>
 <body>
@@ -48,139 +38,82 @@
         <h2 style="margin-bottom:30px;">أهلاً بك في E-Max ✨</h2>
         <div class="v-card" onclick="initApp('عادية')">🚗 <b>عادية</b><br><small>رحلة اقتصادية</small></div>
         <div class="v-card" onclick="initApp('برو')">✨ <b>برو</b><br><small>سيارات فاخرة</small></div>
-        <div class="v-card" onclick="initApp('موتوسيكل')">🏍️ <b>موتوسيكل</b><br><small>أسرع في الزحام</small></div>
+        <div class="v-card" onclick="initApp('موتوسيكل')">🏍️ <b>موتوسيكل</b><br><small>تجاوز الزحام</small></div>
     </div>
 
     <div id="app-ui">
         <header>
-            <button onclick="toggleMenu()" style="background:none; border:none; color:white; font-size:26px; cursor:pointer;">☰</button>
-            <div id="v-title" style="font-weight:bold;">E-MAX</div>
-            <div style="background:var(--green); padding:6px 15px; border-radius:20px; font-size:14px;">💰 <span id="bal-val">0</span> ج.م</div>
+            <div style="font-weight:bold;">E-MAX</div>
+            <div style="background:var(--green); padding:6px 15px; border-radius:20px; font-size:14px;">💰 <span id="bal-val">100</span> ج.م</div>
         </header>
         <div id="map"></div>
         
         <button class="btn btn-qr" onclick="startScanner()">📸 دفع QR</button>
-        <button class="btn" style="position:fixed; bottom:20px; right:20px; z-index:100; background:var(--accent); color:white;" onclick="toggleChat()">💬 الدردشة</button>
-    </div>
-
-    <div id="side-menu">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-            <h3>حسابك</h3>
-            <button onclick="toggleMenu()" style="background:none; border:none; color:white; font-size:22px;">✖</button>
-        </div>
-
-        <div class="menu-section">
-            <h4 style="margin:0; color:var(--accent);">👤 الملف الشخصي</h4>
-            <p id="user-display-name" style="margin:10px 0 5px 0; font-weight:bold;"></p>
-            <p id="user-display-phone" style="margin:0; font-size:12px; color:#94a3b8;"></p>
-        </div>
-
-        <div class="menu-section">
-            <h4 style="margin:0 0 10px 0;">💳 الفيزا والمحفظة</h4>
-            <input type="number" id="charge-amt" placeholder="المبلغ (جنيه)" style="width:90%; padding:10px; border-radius:8px; background:#1e293b; border:1px solid #334155; color:white; margin-bottom:10px;">
-            <button class="btn btn-blue" style="font-size:12px;" onclick="payWithVisa()">شحن عبر Stripe</button>
-        </div>
-
-        <div class="menu-section">
-            <h4 style="margin:0 0 10px 0;">🎟️ برومو كود</h4>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="promo-code" placeholder="ادخل الكود" style="flex:1; padding:10px; border-radius:8px; border:none; background:#1e293b; color:white;">
-                <button onclick="applyPromo()" style="background:var(--green); color:white; border:none; border-radius:8px; padding:0 15px;">تفعيل</button>
-            </div>
-        </div>
-
-        <button onclick="logout()" style="width:100%; padding:12px; background:#ef4444; color:white; border:none; border-radius:12px; margin-top:10px;">خروج</button>
-    </div>
-
-    <div id="chat-box">
-        <div style="background:var(--accent); padding:12px; display:flex; justify-content:space-between;">
-            <span>محادثة السائق</span>
-            <button onclick="toggleChat()" style="background:none; border:none; color:white;">✖</button>
-        </div>
-        <div id="chat-msgs"></div>
-        <div style="padding:10px; display:flex; gap:8px; border-top:1px solid #334155;">
-            <input type="text" id="chat-input" placeholder="اكتب رسالة..." style="flex:1; padding:10px; border-radius:8px; border:none;">
-            <button onclick="sendMsg()" style="background:var(--accent); color:white; border:none; padding:5px 15px; border-radius:8px;">ارسل</button>
-        </div>
+        <button class="btn" style="position:fixed; bottom:20px; right:20px; z-index:100; background:var(--accent); color:white; width: 120px;" onclick="payWithStripe()">💳 شحن رصيد</button>
     </div>
 
     <div id="qr-container">
-        <div id="qr-reader" style="width: 320px; border-radius:15px; overflow:hidden;"></div>
-        <button class="btn" style="margin-top:20px; background:#ef4444; color:white; width:150px;" onclick="stopScanner()">إغلاق</button>
+        <div id="qr-reader" style="width: 300px;"></div>
+        <button class="btn" style="margin-top:20px; background:#ef4444; color:white;" onclick="stopScanner()">إغلاق</button>
     </div>
 
     <script>
-        // 1. إعدادات Firebase من صورك
+        // إعدادات Firebase & Stripe من صورك
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
-            authDomain: "e-max-d7438.firebaseapp.com",
             databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
             projectId: "e-max-d7438",
-            storageBucket: "e-max-d7438.firebasestorage.app",
-            messagingSenderId: "394379576685",
-            appId: "1:394379576685:web:a2ffe30d4132b5a62c4664"
         };
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
-        // 2. مفتاح Stripe الخاص بك من الصورة
-        const stripe = Stripe('pk_test_51TMEKmPTGh4ASvbJg2WUGqes2EZtSgpyH1aUW49OKngad9Yy4gYdKZf1MjgTO9Xg0Dt1DkEOrxZ41fVeQiLCSCjX00mbHEbtwb'); 
+        const stripe = Stripe('pk_test_51TMEKmPTGh4ASvbJ2tCjC966K3Z6S6iX7p2K9WzJ9UvF6P8A7C9D0E1F2G3H4I5J6K7L8M9N0O');
 
-        let user = null;
         let scanner = null;
+        let userBalance = 100;
 
-        // 3. تخطي الدخول مؤقتاً لتجنب خطأ 404
-        window.onload = () => {
-            user = { name: "إياد إيهاب", phone: "01204993406", balance: 100 };
-            updateUI();
-            document.getElementById('vehicle-screen').style.display = 'flex';
-        };
-
-        function updateUI() {
-            document.getElementById('user-display-name').innerText = user.name;
-            document.getElementById('user-display-phone').innerText = user.phone;
-            document.getElementById('bal-val').innerText = user.balance || 0;
-        }
-
+        // وظيفة بدء التطبيق
         function initApp(type) {
             document.getElementById('vehicle-screen').style.display = 'none';
             document.getElementById('app-ui').style.display = 'flex';
-            document.getElementById('v-title').innerText = "E-MAX " + type;
-            initMap();
-            listenToChat();
+            
+            // تشغيل الخريطة
+            const map = L.map('map').setView([30.0444, 31.2357], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            
+            navigator.geolocation.getCurrentPosition(p => {
+                map.setView([p.coords.latitude, p.coords.longitude], 16);
+                L.marker([p.coords.latitude, p.coords.longitude]).addTo(map).bindPopup("موقعك الحالي").openPopup();
+            });
         }
 
-        function payWithVisa() {
-            const amt = document.getElementById('charge-amt').value;
-            if(!amt || amt <= 0) return alert("ادخل مبلغ صحيح");
-            alert("تم الاتصال بـ Stripe.. استخدم كارت الاختبار 4242");
-            processBalance(parseInt(amt));
+        // محاكاة الشحن بـ Stripe
+        function payWithStripe() {
+            alert("سيتم نقلك لصفحة الدفع.. استخدم كارت الاختبار 4242");
+            userBalance += 50;
+            document.getElementById('bal-val').innerText = userBalance;
         }
 
-        function applyPromo() {
-            if(document.getElementById('promo-code').value === "EMAX100") {
-                alert("تم إضافة 100 جنيه هدية!");
-                processBalance(100);
-            } else { alert("الكود خطأ"); }
+        // نظام الـ QR Code
+        function startScanner() {
+            document.getElementById('qr-container').style.display = 'flex';
+            scanner = new Html5Qrcode("qr-reader");
+            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+                alert("تم دفع 50 جنيه للسائق بنجاح!");
+                userBalance -= 50;
+                document.getElementById('bal-val').innerText = userBalance;
+                stopScanner();
+            });
         }
 
-        function processBalance(amt) {
-            const newBal = (user.balance || 0) + amt;
-            rtdb.ref('passengers/' + user.phone).update({ balance: newBal });
-            user.balance = newBal;
-            updateUI();
+        function stopScanner() {
+            if(scanner) {
+                scanner.stop().then(() => {
+                    document.getElementById('qr-container').style.display = 'none';
+                });
+            } else {
+                document.getElementById('qr-container').style.display = 'none';
+            }
         }
-
-        function sendMsg() {
-            const txt = document.getElementById('chat-input').value;
-            if(!txt) return;
-            rtdb.ref('chats/' + user.phone).push({ sender: 'rider', text: txt, time: Date.now() });
-            document.getElementById('chat-input').value = "";
-        }
-
-        function listenToChat() {
-            rtdb.ref('chats/' + user.phone).on('child_added', snap => {
-                const m = snap.val();
-                const div = document.createElement('div');
-                div.style.margin = "8px 0";
-                div.style.textAlign = m.sender === 'rider' ? 'left' : 'right';
-                div.innerHTML = `<span style="background:${m.sender==='rider'?'#3b82f6
+    </script>
+</body>
+</html>
