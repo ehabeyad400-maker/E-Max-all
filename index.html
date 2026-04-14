@@ -3,158 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | Passenger</title>
+    <title>E-Max | Passenger Pro</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { --bg: #0b1120; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --green: #10b981; --warn: #f59e0b; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
         
-        /* شاشة الدخول */
-        #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
-        .login-card { background: var(--card); padding: 35px; border-radius: 25px; text-align: center; width: 100%; max-width: 400px; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        .logo { font-size: 40px; font-weight: 800; margin-bottom: 25px; }
-        .logo span { color: var(--accent); }
-        
-        input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 16px; outline: none; }
-        .btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 16px; }
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-google { background: white; color: black; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        /* شاشة البداية واختيار المركبة */
+        #vehicle-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .v-card { background: var(--card); width: 100%; max-width: 350px; padding: 20px; border-radius: 20px; margin: 10px 0; cursor: pointer; border: 2px solid transparent; text-align: center; transition: 0.3s; }
+        .v-card:hover { border-color: var(--accent); transform: translateY(-5px); }
 
-        /* الواجهة الأساسية */
-        #main-app { display: none; height: 100vh; flex-direction: column; }
-        header { background: var(--card); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
-        #map { flex-grow: 1; width: 100%; }
+        /* واجهة التطبيق الرئيسية */
+        #app-ui { display: none; flex-direction: column; height: 100vh; }
+        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        #map { flex-grow: 1; z-index: 1; }
+
+        /* القائمة الجانبية (Sidebar) */
+        #side-menu { position: fixed; right: -100%; top: 0; width: 300px; height: 100%; background: var(--card); z-index: 10000; transition: 0.4s; padding: 25px; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
+        #side-menu.active { right: 0; }
+        .menu-section { background: #0f172a; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #334155; }
+
+        /* نظام الشات */
+        #chat-box { position: fixed; bottom: -400px; left: 20px; width: 300px; height: 380px; background: var(--card); z-index: 9000; border-radius: 20px 20px 0 0; transition: 0.4s; display: flex; flex-direction: column; border: 1px solid var(--accent); }
+        #chat-box.active { bottom: 0; }
+        #chat-msgs { flex-grow: 1; padding: 10px; overflow-y: auto; font-size: 14px; background: #0b1120; }
         
-        #settings-panel { position: fixed; right: -320px; top: 0; width: 280px; height: 100%; background: var(--card); z-index: 10000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 30px; border-left: 1px solid #334155; }
-        #settings-panel.active { right: 0; }
-        
-        .wallet-btn { background: #10b981; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer; border: none; }
+        /* ماسح QR */
+        #qr-container { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 20000; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* الأزرار العامة */
+        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-blue { background: var(--accent); color: white; width: 100%; }
+        .btn-qr { position: fixed; bottom: 90px; right: 20px; z-index: 100; background: var(--warn); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-card">
-            <div class="logo">E-<span>Max</span></div>
-            
-            <button class="btn btn-google" onclick="loginWithGoogle()">
-                <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width="20">
-                الدخول بواسطة جوجل
-            </button>
-
-            <div style="margin: 15px 0; color: #64748b; font-size: 14px;">أو سجل يدوياً</div>
-
-            <input type="text" id="userName" placeholder="الاسم">
-            <input type="tel" id="userPhone" placeholder="رقم الموبايل">
-            <input type="password" id="userPass" placeholder="كلمة المرور">
-            <button class="btn btn-primary" onclick="handleManualLogin()">دخول / تسجيل</button>
-        </div>
+    <div id="vehicle-screen">
+        <h2 style="margin-bottom:30px;">أهلاً بك في E-Max ✨</h2>
+        <div class="v-card" onclick="initApp('عادية')">🚗 <b>عادية</b><br><small>رحلة اقتصادية يومية</small></div>
+        <div class="v-card" onclick="initApp('برو')">✨ <b>برو</b><br><small>سيارات فاخرة وسائقين مميزين</small></div>
+        <div class="v-card" onclick="initApp('موتوسيكل')">🏍️ <b>موتوسيكل</b><br><small>تجاوز الزحام في دقائق</small></div>
     </div>
 
-    <div id="main-app">
+    <div id="app-ui">
         <header>
-            <button style="background:none; border:none; color:white; font-size:26px; cursor:pointer;" onclick="toggleSettings()">⚙️</button>
-            <div style="font-weight:900; font-size:20px; letter-spacing:1px;">E-MAX</div>
-            <button class="wallet-btn" onclick="openWalletModal()">💰 <span id="balance-val">0</span> ج.م</button>
+            <button onclick="toggleMenu()" style="background:none; border:none; color:white; font-size:26px;">☰</button>
+            <div id="v-title" style="font-weight:bold; letter-spacing:1px;">E-MAX</div>
+            <div style="background:var(--green); padding:6px 15px; border-radius:20px; font-size:14px;">💰 <span id="bal-val">0</span> ج.م</div>
         </header>
         <div id="map"></div>
+        
+        <button class="btn btn-qr" onclick="startScanner()">📸 دفع QR</button>
+        <button class="btn" style="position:fixed; bottom:20px; right:20px; z-index:100; background:var(--accent); color:white;" onclick="toggleChat()">💬 الدردشة</button>
     </div>
 
-    <div id="settings-panel">
-        <button style="background:none; border:none; color:white; font-size:28px; cursor:pointer;" onclick="toggleSettings()">✖</button>
-        <div style="text-align:center; margin-top:40px;">
-            <div style="width:80px; height:80px; background:var(--accent); border-radius:50%; margin:0 auto; display:flex; align-items:center; justify-content:center; font-size:35px; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);">👤</div>
-            <h3 id="p-name" style="margin-top:20px; font-size:22px;">الاسم</h3>
-            <p id="p-phone" style="color:#94a3b8; font-size:14px;">01xxxxxxxxx</p>
+    <div id="side-menu">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <h3>حسابك</h3>
+            <button onclick="toggleMenu()" style="background:none; border:none; color:white; font-size:22px;">✖</button>
         </div>
-        <hr style="border:0.5px solid #334155; margin:30px 0;">
-        <button onclick="logout()" style="width:100%; padding:12px; background:#ef4444; color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">تسجيل الخروج</button>
+
+        <div class="menu-section">
+            <h4 style="margin:0; color:var(--accent);">👤 الملف الشخصي</h4>
+            <p id="user-display-name" style="margin:10px 0 5px 0; font-weight:bold;"></p>
+            <p id="user-display-phone" style="margin:0; font-size:12px; color:#94a3b8;"></p>
+        </div>
+
+        <div class="menu-section">
+            <h4 style="margin:0 0 10px 0;">💳 الفيزا والمحفظة</h4>
+            <input type="number" id="charge-amt" placeholder="المبلغ (جنيه)" style="width:90%; padding:10px; border-radius:8px; background:#1e293b; border:1px solid #334155; color:white; margin-bottom:10px;">
+            <button class="btn btn-blue" style="font-size:12px;" onclick="payWithVisa()">شحن عبر Stripe</button>
+        </div>
+
+        <div class="menu-section">
+            <h4 style="margin:0 0 10px 0;">🎟️ برومو كود</h4>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="promo-code" placeholder="ادخل الكود" style="flex:1; padding:10px; border-radius:8px; border:none; background:#1e293b; color:white;">
+                <button onclick="applyPromo()" style="background:var(--green); color:white; border:none; border-radius:8px; padding:0 15px;">تفعيل</button>
+            </div>
+        </div>
+
+        <button onclick="logout()" style="width:100%; padding:12px; background:#ef4444; color:white; border:none; border-radius:12px; margin-top:10px;">خروج</button>
+    </div>
+
+    <div id="chat-box">
+        <div style="background:var(--accent); padding:12px; display:flex; justify-content:space-between;">
+            <span>محادثة السائق</span>
+            <button onclick="toggleChat()" style="background:none; border:none; color:white;">✖</button>
+        </div>
+        <div id="chat-msgs"></div>
+        <div style="padding:10px; display:flex; gap:8px; border-top:1px solid #334155;">
+            <input type="text" id="chat-input" placeholder="اكتب رسالة..." style="flex:1; padding:10px; border-radius:8px; border:none;">
+            <button onclick="sendMsg()" style="background:var(--accent); color:white; border:none; padding:5px 15px; border-radius:8px;">ارسل</button>
+        </div>
+    </div>
+
+    <div id="qr-container">
+        <div id="qr-reader" style="width: 320px; border-radius:15px; overflow:hidden;"></div>
+        <button class="btn" style="margin-top:20px; background:#ef4444; color:white; width:150px;" onclick="stopScanner()">إغلاق</button>
     </div>
 
     <script>
-        // 2. إعدادات Firebase (من صورتك)
+        // 1. تكوين الخدمات
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             authDomain: "e-max-d7438.firebaseapp.com",
+            databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
             projectId: "e-max-d7438",
             storageBucket: "e-max-d7438.firebasestorage.app",
             messagingSenderId: "394379576685",
             appId: "1:394379576685:web:a2ffe30d4132b5a62c4664"
         };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const rtdb = firebase.database();
+        const stripe = Stripe('pk_test_51TMEkMPTGh4ASvbJ2tCjC966K3Z6S6iX7p2K9WzJ9UvF6P8A7C9D0E1F2G3H4I5J6K7L8M9N0O'); // المفتاح الخاص بك
 
-        // فحص الجلسة عند التحميل
+        let user = null;
+        let scanner = null;
+
+        // 2. التحقق من الدخول
         window.onload = () => {
-            const saved = localStorage.getItem('emax_rider');
-            if(saved) launchApp(JSON.parse(saved));
+            const saved = localStorage.getItem('emax_rider_session');
+            if(saved) {
+                user = JSON.parse(saved);
+                updateUI();
+            } else {
+                window.location.href = "login.html";
+            }
         };
 
-        // وظيفة جوجل
-        function loginWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).then(res => {
-                const data = { name: res.user.displayName, phone: "جوجل", balance: 0 };
-                saveAndLaunch(data);
-            }).catch(e => alert(e.message));
+        function updateUI() {
+            document.getElementById('user-display-name').innerText = user.name;
+            document.getElementById('user-display-phone').innerText = user.phone;
+            document.getElementById('bal-val').innerText = user.balance || 0;
         }
 
-        // وظيفة الموبايل (Realtime Database)
-        function handleManualLogin() {
-            const name = document.getElementById('userName').value;
-            const phone = document.getElementById('userPhone').value;
-            const pass = document.getElementById('userPass').value;
+        // 3. بدء التطبيق
+        function initApp(type) {
+            document.getElementById('vehicle-screen').style.display = 'none';
+            document.getElementById('app-ui').style.display = 'flex';
+            document.getElementById('v-title').innerText = "E-MAX " + type;
+            initMap();
+            listenToChat();
+        }
 
-            if(!phone || !pass) return alert("املا البيانات يا بطل");
+        // 4. نظام الفيزا والبرومو
+        function payWithVisa() {
+            const amt = document.getElementById('charge-amt').value;
+            if(!amt || amt <= 0) return alert("ادخل مبلغ صحيح");
+            alert("سيتم تحويلك لبوابة الدفع.. استخدم بطاقة الاختبار (4242...)");
+            processBalance(parseInt(amt));
+        }
 
-            rtdb.ref('passengers/' + phone).once('value', s => {
-                if(s.exists()) {
-                    if(s.val().pass === pass) saveAndLaunch(s.val());
-                    else alert("كلمة المرور غلط!");
-                } else {
-                    const newUser = { name: name || "عميل جديد", phone: phone, pass: pass, balance: 0 };
-                    rtdb.ref('passengers/' + phone).set(newUser);
-                    saveAndLaunch(newUser);
-                }
+        function applyPromo() {
+            const code = document.getElementById('promo-code').value;
+            if(code === "EMAX100") {
+                alert("مبروك! تم شحن 100 جنيه رصيد هدية.");
+                processBalance(100);
+            } else { alert("الكود غير صحيح"); }
+        }
+
+        function processBalance(amt) {
+            const newBal = (user.balance || 0) + amt;
+            rtdb.ref('passengers/' + user.phone).update({ balance: newBal });
+            user.balance = newBal;
+            localStorage.setItem('emax_rider_session', JSON.stringify(user));
+            updateUI();
+        }
+
+        // 5. نظام الشات
+        function sendMsg() {
+            const txt = document.getElementById('chat-input').value;
+            if(!txt) return;
+            rtdb.ref('chats/' + user.phone).push({ sender: 'rider', text: txt, time: Date.now() });
+            document.getElementById('chat-input').value = "";
+        }
+
+        function listenToChat() {
+            rtdb.ref('chats/' + user.phone).on('child_added', snap => {
+                const m = snap.val();
+                const div = document.createElement('div');
+                div.style.margin = "8px 0";
+                div.style.textAlign = m.sender === 'rider' ? 'left' : 'right';
+                div.innerHTML = `<span style="background:${m.sender==='rider'?'var(--accent)':'var(--green)'}; padding:8px 12px; border-radius:12px; display:inline-block; max-width:80%;">${m.text}</span>`;
+                document.getElementById('chat-msgs').appendChild(div);
+                document.getElementById('chat-msgs').scrollTop = 9999;
             });
         }
 
-        function saveAndLaunch(data) {
-            localStorage.setItem('emax_rider', JSON.stringify(data));
-            launchApp(data);
-        }
-
-        function launchApp(user) {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'flex';
-            document.getElementById('p-name').innerText = user.name;
-            document.getElementById('p-phone').innerText = user.phone;
-
-            // الخريطة والـ GPS
+        // 6. الخريطة وماسح QR
+        function initMap() {
             const map = L.map('map').setView([30.0444, 31.2357], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            
-            if(navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(p => {
-                    const lat = p.coords.latitude;
-                    const lng = p.coords.longitude;
-                    map.setView([lat, lng], 16);
-                    L.marker([lat, lng]).addTo(map).bindPopup("أنت هنا").openPopup();
-                });
-            }
+            navigator.geolocation.getCurrentPosition(p => {
+                map.setView([p.coords.latitude, p.coords.longitude], 16);
+                L.marker([p.coords.latitude, p.coords.longitude]).addTo(map).bindPopup("موقعك الحالي").openPopup();
+            });
         }
 
-        function toggleSettings() { document.getElementById('settings-panel').classList.toggle('active'); }
-        function logout() { localStorage.removeItem('emax_rider'); location.reload(); }
-        function openWalletModal() { alert("جاري العمل على نظام شحن فودافون كاش الخاص بك.."); }
+        function startScanner() {
+            document.getElementById('qr-container').style.display = 'flex';
+            scanner = new Html5Qrcode("qr-reader");
+            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+                alert("تم المسح! دفع 50 جنيه للسائق: " + text);
+                processBalance(-50);
+                stopScanner();
+            });
+        }
+
+        function stopScanner() {
+            if(scanner) scanner.stop().then(() => document.getElementById('qr-container').style.display = 'none');
+            else document.getElementById('qr-container').style.display = 'none';
+        }
+
+        function toggleMenu() { document.getElementById('side-menu').classList.toggle('active'); }
+        function toggleChat() { document.getElementById('chat-box').classList.toggle('active'); }
+        function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
-</html>>
+</html>
