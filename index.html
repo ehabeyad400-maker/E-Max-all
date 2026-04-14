@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | تطبيق الراكب</title>
+    <title>E-Max | Passenger Pro</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -13,119 +13,82 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { 
-            --bg: #0b0f19; 
-            --card: #161c2d; 
-            --accent: #3b82f6; 
-            --text: #ffffff; 
-            --input-bg: #1f2937;
-        }
+        :root { --bg: #0b0f19; --card: #161c2d; --accent: #3b82f6; --text: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            background: var(--bg); 
-            color: var(--text); 
-            height: 100vh; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-        }
+        /* الهيدر */
+        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-bottom: 1px solid #2d3748; }
+        .icon-btn { cursor: pointer; font-size: 20px; background: none; border: none; color: white; }
 
         /* شاشة الدخول */
-        #login-screen { 
-            position: fixed; 
-            inset: 0; 
-            background: var(--bg); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            z-index: 9999; 
-        }
+        #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-card { background: var(--card); padding: 30px; border-radius: 25px; text-align: center; width: 85%; max-width: 380px; border: 1px solid #2d3748; }
+        .btn-google { background: white; color: black; padding: 12px; width: 100%; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; }
 
-        .login-card { 
-            background: var(--card); 
-            padding: 40px 30px; 
-            border-radius: 30px; 
-            text-align: center; 
-            width: 90%; 
-            max-width: 400px; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border: 1px solid #2d3748;
-        }
+        /* الخريطة */
+        #map { flex-grow: 1; width: 100%; }
 
-        .logo { font-size: 40px; font-weight: 900; margin-bottom: 10px; letter-spacing: -1px; }
-        .logo span { color: var(--accent); }
+        /* القائمة الجانبية (Settings) */
+        #settings-panel { position: fixed; right: -300px; top: 0; width: 280px; height: 100%; background: var(--card); z-index: 2000; transition: 0.3s; padding: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.5); }
+        #settings-panel.active { right: 0; }
+        .profile-img { width: 70px; height: 70px; background: var(--accent); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
 
-        .btn-google { 
-            background: white; 
-            color: #000; 
-            border: none; 
-            padding: 15px; 
-            width: 100%; 
-            border-radius: 15px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 12px; 
-            font-size: 16px;
-            transition: 0.3s;
-            margin-top: 20px;
-        }
-
-        .btn-google:hover { background: #f1f1f1; transform: translateY(-2px); }
-
-        /* واجهة التطبيق الرئيسية */
-        #main-app { display: none; flex-direction: column; height: 100vh; width: 100%; }
-
-        header { 
-            background: var(--card); 
-            padding: 15px 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
-        }
-
-        .user-info { display: flex; align-items: center; gap: 10px; font-weight: bold; }
-        .balance-badge { background: var(--accent); padding: 5px 15px; border-radius: 20px; font-size: 14px; }
-
-        #map { flex-grow: 1; width: 100%; z-index: 1; }
+        /* نافذة المحفظة */
+        #wallet-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
+        .pay-method { background: #1f2937; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; border: 1px solid #374151; }
+        .pay-method:hover { border-color: var(--accent); }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <div class="login-card">
-            <div class="logo">E-<span>Max</span></div>
-            <p style="color: #94a3b8; margin-bottom: 30px;">أهلاً بك في تطبيق الراكب</p>
-            
+            <h2>E-Max</h2>
             <button class="btn-google" onclick="loginWithGoogle()">
-                <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width="24">
-                الدخول بواسطة جوجل
+                <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width="20">
+                تسجيل دخول سريع
             </button>
         </div>
     </div>
 
-    <div id="main-app">
+    <div id="main-app" style="display:none; height: 100vh; flex-direction: column;">
         <header>
-            <div class="user-info">
-                <div style="width: 35px; height: 35px; background: #3b82f6; border-radius: 50%; display: flex; justify-content: center; align-items: center;">👤</div>
-                <span id="u-name">الراكب</span>
-            </div>
-            <div class="balance-badge">
-                رصيدك: <span id="u-bal">0</span> ج.م
-            </div>
+            <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
+            <div style="font-weight: bold;">E-MAX</div>
+            <button class="icon-btn" onclick="openWallet()">💰 <span id="u-bal">0</span></button>
         </header>
         
         <div id="map"></div>
     </div>
 
+    <div id="settings-panel">
+        <button class="icon-btn" onclick="toggleSettings()">✖</button>
+        <div class="profile-img">👤</div>
+        <h3 id="p-name">الاسم</h3>
+        <p id="p-email" style="color: #94a3b8; font-size: 14px;">الإيميل</p>
+        <p id="p-phone" style="color: #94a3b8; font-size: 14px;">01xxxxxxxxx</p>
+        <hr style="border: 0.5px solid #2d3748; margin: 20px 0;">
+        <button onclick="logout()" style="color: #ef4444; background: none; border: none; cursor: pointer;">تسجيل الخروج</button>
+    </div>
+
+    <div id="wallet-modal">
+        <div class="modal-content">
+            <h3>شحن المحفظة</h3>
+            <div class="pay-method" onclick="alert('سوف يتم التحويل لـ فودافون كاش')">
+                <span>فودافون كاش</span> <span>📱</span>
+            </div>
+            <div class="pay-method" onclick="alert('سوف يتم فتح بوابة الفيزا')">
+                <span>بطاقة بنكية (Visa)</span> <span>💳</span>
+            </div>
+            <div class="pay-method" onclick="alert('كود شحن فورى: 12345')">
+                <span>فوري</span> <span>🏪</span>
+            </div>
+            <button onclick="closeWallet()" style="margin-top: 15px; background: none; border: 1px solid white; color: white; padding: 10px 20px; border-radius: 10px;">إغلاق</button>
+        </div>
+    </div>
+
     <script>
-        // إعدادات Firebase المربوطة بمشروعك
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             authDomain: "e-max-d7438.firebaseapp.com",
@@ -134,47 +97,76 @@
             messagingSenderId: "394379576685",
             appId: "1:394379576685:web:a2ffe30d4132b5a62c4664"
         };
-
-        // بدء تشغيل Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const rtdb = firebase.database();
 
-        // وظيفة تسجيل الدخول بجوجل
+        let map, userMarker;
+
+        // 1. فحص الجلسة (عشان يفضل حافظ الدخول)
+        window.onload = () => {
+            const savedUser = localStorage.getItem('emax_user');
+            if (savedUser) {
+                launchApp(JSON.parse(savedUser));
+            }
+        };
+
         function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).then((result) => {
-                const user = result.user;
-                // إظهار واجهة التطبيق وإرسال اسم المستخدم
-                launchApp(user.displayName);
-            }).catch((error) => {
-                alert("حدث خطأ أثناء تسجيل الدخول: " + error.message);
-            });
+            firebase.auth().signInWithPopup(provider).then((res) => {
+                const userData = {
+                    name: res.user.displayName,
+                    email: res.user.email,
+                    phone: res.user.phoneNumber || "لم يتم الربط",
+                    balance: 0
+                };
+                localStorage.setItem('emax_user', JSON.stringify(userData));
+                launchApp(userData);
+            }).catch(err => alert(err.message));
         }
 
-        // تشغيل واجهة الخريطة والتطبيق
-        function launchApp(userName) {
+        function launchApp(user) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
-            document.getElementById('u-name').innerText = userName;
+            
+            // تحديث بيانات البروفايل
+            document.getElementById('u-bal').innerText = user.balance;
+            document.getElementById('p-name').innerText = user.name;
+            document.getElementById('p-email').innerText = user.email;
+            document.getElementById('p-phone').innerText = user.phone;
 
-            // تحديد موقع افتراضي (القاهرة/الإسكندرية)
-            const defaultLat = 31.2001; 
-            const defaultLng = 29.9187;
+            initMap();
+        }
 
-            // تشغيل الخريطة بعد ثوانٍ بسيطة للتأكد من تحميل الـ Div
-            setTimeout(() => {
-                const map = L.map('map').setView([defaultLat, defaultLng], 13);
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
+        // 2. تحديد الموقع التلقائي
+        function initMap() {
+            map = L.map('map').setView([30.0444, 31.2357], 15); // القاهرة كبداية
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-                // إضافة علامة لموقع الراكب
-                L.marker([defaultLat, defaultLng]).addTo(map)
-                    .bindPopup('أنت هنا الآن')
-                    .openPopup();
-            }, 500);
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition((pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    
+                    if (!userMarker) {
+                        userMarker = L.marker([lat, lng]).addTo(map).bindPopup("أنت هنا").openPopup();
+                        map.setView([lat, lng], 16);
+                    } else {
+                        userMarker.setLatLng([lat, lng]);
+                    }
+                }, (err) => console.log("خطأ في تحديد الموقع"), { enableHighAccuracy: true });
+            }
+        }
+
+        // 3. التحكم في الواجهة
+        function toggleSettings() {
+            document.getElementById('settings-panel').classList.toggle('active');
+        }
+
+        function openWallet() { document.getElementById('wallet-modal').style.display = 'flex'; }
+        function closeWallet() { document.getElementById('wallet-modal').style.display = 'none'; }
+
+        function logout() {
+            localStorage.removeItem('emax_user');
+            location.reload();
         }
     </script>
 </body>
