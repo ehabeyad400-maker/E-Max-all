@@ -49,6 +49,7 @@
     </div>
 
     <script>
+        // بيانات Firebase الخاصة بك
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             authDomain: "e-max-d7438.firebaseapp.com",
@@ -58,15 +59,21 @@
             appId: "1:394379576685:web:a2ffe30d4132b5a62c4664",
             measurementId: "G-MRQTSC468P"
         };
+
+        // البدء
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const rtdb = firebase.database();
 
+        // وظيفة دخول جوجل (تأكد من مطابقة الاسم)
         function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider).then(res => {
                 completeLogin({ name: res.user.displayName, balance: 0 });
-            }).catch(err => alert("خطأ في جوجل: " + err.message));
+            }).catch(err => {
+                console.error(err);
+                alert("خطأ: " + err.message);
+            });
         }
 
         function handleManualLogin() {
@@ -82,4 +89,16 @@
             });
         }
 
-        function completeLogin(data)
+        function completeLogin(data) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            document.getElementById('u-name').innerText = data.name;
+            document.getElementById('u-bal').innerText = data.balance;
+            setTimeout(() => {
+                const map = L.map('map').setView([31.2, 29.9], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            }, 500);
+        }
+    </script>
+</body>
+</html>
