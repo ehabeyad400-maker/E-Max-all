@@ -2,19 +2,46 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>E-Max | Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Max | Passenger</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root { --bg: #0b0f19; --card: #161c2d; --accent: #3b82f6; --text: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-card { background: var(--card); padding: 30px; border-radius: 25px; text-align: center; width: 85%; max-width: 380px; border: 1px solid #2d3748; }
+        .logo { font-size: 35px; font-weight: bold; margin-bottom: 20px; }
+        .logo span { color: var(--accent); }
+        .btn-google { background: white; color: #000; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        #main-app { display: none; flex-grow: 1; flex-direction: column; height: 100vh; }
+        header { background: #161c2d; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        #map { flex-grow: 1; width: 100%; background: #242f3e; }
+    </style>
 </head>
-<body style="background: #0b0f19; color: white; text-align: center; font-family: sans-serif; padding-top: 50px;">
+<body>
 
-    <h1>E-Max App</h1>
-    <div id="status" style="color: #3b82f6;">جاري التحميل...</div>
-    <br>
-    <button onclick="loginWithGoogle()" style="padding: 15px 30px; cursor: pointer; border-radius: 10px; border: none; font-weight: bold;">
-        اضغط هنا للتجربة (Google Login)
-    </button>
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="logo">E-<span>Max</span></div>
+            <p>مرحباً بك في مستقبل النقل في مصر</p>
+            <button class="btn-google" onclick="loginWithGoogle()">
+                <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width="20">
+                تسجيل دخول سريع بجوجل
+            </button>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <header>
+            <div id="u-name">مرحباً..</div>
+            <div style="background:#3b82f6; padding:5px 15px; border-radius:20px;">💰 <span id="u-bal">0</span> ج.م</div>
+        </header>
+        <div id="map"></div>
+    </div>
 
     <script>
         const firebaseConfig = {
@@ -25,25 +52,26 @@
             messagingSenderId: "394379576685",
             appId: "1:394379576685:web:a2ffe30d4132b5a62c4664"
         };
-
-        // تشغيل Firebase
-        try {
-            firebase.initializeApp(firebaseConfig);
-            document.getElementById('status').innerText = "تم الاتصال بـ Firebase بنجاح ✅";
-        } catch (e) {
-            document.getElementById('status').innerText = "خطأ في الإعدادات ❌";
-            console.error(e);
-        }
+        firebase.initializeApp(firebaseConfig);
 
         function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithPopup(provider)
-                .then((result) => {
-                    alert("أهلاً بك: " + result.user.displayName);
-                })
-                .catch((error) => {
-                    alert("خطأ: " + error.message);
-                });
+            firebase.auth().signInWithPopup(provider).then((result) => {
+                showApp(result.user.displayName);
+            }).catch(err => alert(err.message));
+        }
+
+        function showApp(name) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            document.getElementById('u-name').innerText = "يا هلا، " + name;
+            
+            // تشغيل الخريطة
+            setTimeout(() => {
+                var map = L.map('map').setView([31.2001, 29.9187], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                L.marker([31.2001, 29.9187]).addTo(map).bindPopup('موقعك الحالي').openPopup();
+            }, 500);
         }
     </script>
 </body>
