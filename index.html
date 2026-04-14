@@ -3,116 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | النسخة الاحترافية</title>
+    <title>E-Max | النسخة المتكاملة 🚀</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://js.stripe.com/v3/"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --green: #10b981; --warn: #f59e0b; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --green: #10b981; --google: #db4437; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
         
-        /* واجهة اختيار المركبة */
-        #vehicle-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .v-card { background: var(--card); width: 100%; max-width: 350px; padding: 20px; border-radius: 20px; margin: 10px 0; cursor: pointer; border: 2px solid transparent; text-align: center; transition: 0.3s; }
-        .v-card:hover { border-color: var(--accent); transform: translateY(-5px); }
+        /* شاشات الدخول والانتظار */
+        #auth-screen, #vehicle-screen { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
+        .card { background: var(--card); padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-        /* واجهة الخريطة */
+        .v-card { background: var(--card); width: 100%; padding: 15px; border-radius: 15px; margin: 10px 0; cursor: pointer; border: 2px solid transparent; transition: 0.3s; }
+        .v-card:hover { border-color: var(--accent); transform: scale(1.02); }
+
+        /* الواجهة الرئيسية */
         #app-ui { display: none; flex-direction: column; height: 100vh; }
-        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         #map { flex-grow: 1; z-index: 1; }
 
-        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-qr { position: fixed; bottom: 90px; right: 20px; z-index: 100; background: var(--warn); color: white; }
+        /* التحكم */
+        .controls { position: fixed; bottom: 0; width: 100%; background: var(--card); padding: 20px; border-radius: 25px 25px 0 0; z-index: 1000; box-sizing: border-box; }
+        .input-box { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
         
-        #qr-container { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 20000; flex-direction: column; align-items: center; justify-content: center; }
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-main { background: var(--accent); color: white; }
+
+        /* أيقونات العربيات */
+        .car-icon { filter: hue-rotate(200deg); }
     </style>
 </head>
 <body>
 
-    <div id="vehicle-screen">
-        <h2 style="margin-bottom:30px;">أهلاً بك في E-Max ✨</h2>
-        <div class="v-card" onclick="initApp('عادية')">🚗 <b>عادية</b><br><small>رحلة اقتصادية</small></div>
-        <div class="v-card" onclick="initApp('برو')">✨ <b>برو</b><br><small>سيارات فاخرة</small></div>
-        <div class="v-card" onclick="initApp('موتوسيكل')">🏍️ <b>موتوسيكل</b><br><small>تجاوز الزحام</small></div>
+    <div id="auth-screen">
+        <div class="card">
+            <h2 style="color: var(--accent);">E-MAX 🚕</h2>
+            <button class="btn" style="background:var(--google); color:white;" onclick="loginWithGoogle()">الدخول بحساب Google</button>
+            <p style="margin:10px 0; font-size:12px; color:#64748b;">أو بالبريد الإلكتروني</p>
+            <input type="email" id="email" class="input-box" placeholder="Email">
+            <input type="password" id="pass" class="input-box" placeholder="Password">
+            <button class="btn btn-main" onclick="handleAuth()">دخول</button>
+        </div>
+    </div>
+
+    <div id="vehicle-screen" style="display:none;">
+        <div class="card">
+            <h3>اختر رحلتك ✨</h3>
+            <div class="v-card" onclick="startTrip('عادية')">🚗 عادية</div>
+            <div class="v-card" onclick="startTrip('برو')">✨ برو</div>
+            <div class="v-card" onclick="startTrip('موتوسيكل')">🏍️ موتوسيكل</div>
+        </div>
     </div>
 
     <div id="app-ui">
         <header>
-            <div style="font-weight:bold;">E-MAX</div>
-            <div style="background:var(--green); padding:6px 15px; border-radius:20px; font-size:14px;">💰 <span id="bal-val">100</span> ج.م</div>
+            <div onclick="location.reload()" style="cursor:pointer;">☰</div>
+            <div id="status-text" style="font-weight:bold;">جاري تحديد موقعك...</div>
+            <div style="color:var(--green);">💰 <span id="balance">0</span></div>
         </header>
-        <div id="map"></div>
-        
-        <button class="btn btn-qr" onclick="startScanner()">📸 دفع QR</button>
-        <button class="btn" style="position:fixed; bottom:20px; right:20px; z-index:100; background:var(--accent); color:white; width: 120px;" onclick="payWithStripe()">💳 شحن رصيد</button>
-    </div>
 
-    <div id="qr-container">
-        <div id="qr-reader" style="width: 300px;"></div>
-        <button class="btn" style="margin-top:20px; background:#ef4444; color:white;" onclick="stopScanner()">إغلاق</button>
+        <div id="map"></div>
+
+        <div class="controls">
+            <input type="text" id="dest" class="input-box" placeholder="إلى أين تريد الذهاب؟">
+            <button class="btn btn-main" id="request-btn" onclick="requestRide()">تأكيد طلب الرحلة ✅</button>
+            <div id="driver-info" style="display:none; margin-top:10px; font-size:14px; color:var(--green);">
+                🚖 السائق "أحمد" في الطريق إليك (تتبع على الخريطة)
+            </div>
+        </div>
     </div>
 
     <script>
-        // إعدادات Firebase & Stripe من صورك
+        // إعدادات Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
+            authDomain: "e-max-d7438.firebaseapp.com",
             databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
             projectId: "e-max-d7438",
         };
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const rtdb = firebase.database();
-        const stripe = Stripe('pk_test_51TMEKmPTGh4ASvbJ2tCjC966K3Z6S6iX7p2K9WzJ9UvF6P8A7C9D0E1F2G3H4I5J6K7L8M9N0O');
 
-        let scanner = null;
-        let userBalance = 100;
+        let map, userMarker, driverMarker;
+        let carsAround = [];
 
-        // وظيفة بدء التطبيق
-        function initApp(type) {
+        // تذكر تسجيل الدخول
+        auth.onAuthStateChanged(user => {
+            if(user) {
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('vehicle-screen').style.display = 'flex';
+                syncData(user.uid);
+            }
+        });
+
+        function loginWithGoogle() {
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        }
+
+        function handleAuth() {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('pass').value;
+            auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
+        }
+
+        function syncData(uid) {
+            rtdb.ref('users/' + uid + '/balance').on('value', s => {
+                document.getElementById('balance').innerText = s.val() || 0;
+            });
+        }
+
+        function startTrip(type) {
             document.getElementById('vehicle-screen').style.display = 'none';
             document.getElementById('app-ui').style.display = 'flex';
-            
-            // تشغيل الخريطة
-            const map = L.map('map').setView([30.0444, 31.2357], 15);
+            document.getElementById('status-text').innerText = "E-MAX " + type;
+            initMap();
+        }
+
+        function initMap() {
+            map = L.map('map').setView([30.0444, 31.2357], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            
+
             navigator.geolocation.getCurrentPosition(p => {
-                map.setView([p.coords.latitude, p.coords.longitude], 16);
-                L.marker([p.coords.latitude, p.coords.longitude]).addTo(map).bindPopup("موقعك الحالي").openPopup();
+                const lat = p.coords.latitude;
+                const lng = p.coords.longitude;
+                map.setView([lat, lng], 16);
+                userMarker = L.marker([lat, lng]).addTo(map).bindPopup("موقعك الحالي").openPopup();
+                
+                // محاكاة عربيات حولك
+                showNearbyCars(lat, lng);
             });
         }
 
-        // محاكاة الشحن بـ Stripe
-        function payWithStripe() {
-            alert("سيتم نقلك لصفحة الدفع.. استخدم كارت الاختبار 4242");
-            userBalance += 50;
-            document.getElementById('bal-val').innerText = userBalance;
-        }
-
-        // نظام الـ QR Code
-        function startScanner() {
-            document.getElementById('qr-container').style.display = 'flex';
-            scanner = new Html5Qrcode("qr-reader");
-            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-                alert("تم دفع 50 جنيه للسائق بنجاح!");
-                userBalance -= 50;
-                document.getElementById('bal-val').innerText = userBalance;
-                stopScanner();
-            });
-        }
-
-        function stopScanner() {
-            if(scanner) {
-                scanner.stop().then(() => {
-                    document.getElementById('qr-container').style.display = 'none';
-                });
-            } else {
-                document.getElementById('qr-container').style.display = 'none';
+        function showNearbyCars(lat, lng) {
+            // إضافة 3 عربيات وهمية حول المستخدم
+            for(let i=0; i<3; i++) {
+                let cLat = lat + (Math.random() - 0.5) * 0.01;
+                let cLng = lng + (Math.random() - 0.5) * 0.01;
+                let car = L.marker([cLat, cLng], {
+                    icon: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize: [30, 30] })
+                }).addTo(map);
+                carsAround.push(car);
             }
+        }
+
+        function requestRide() {
+            const d = document.getElementById('dest').value;
+            if(!d) return alert("اكتب الوجهة!");
+            
+            document.getElementById('request-btn').innerText = "جاري البحث عن سائق...";
+            
+            // محاكاة تتبع السائق بعد 3 ثواني
+            setTimeout(() => {
+                document.getElementById('request-btn').style.display = 'none';
+                document.getElementById('driver-info').style.display = 'block';
+                startTrackingDriver();
+            }, 3000);
+        }
+
+        function startTrackingDriver() {
+            // مكان السائق الافتراضي (بعيد شوية)
+            let dLat = userMarker.getLatLng().lat + 0.005;
+            let dLng = userMarker.getLatLng().lng + 0.005;
+
+            driverMarker = L.marker([dLat, dLng], {
+                icon: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png', iconSize: [40, 40] })
+            }).addTo(map).bindPopup("سائقك قادم").openPopup();
+
+            // تحريك السائق تجاه المستخدم
+            let interval = setInterval(() => {
+                dLat -= 0.0001;
+                dLng -= 0.0001;
+                driverMarker.setLatLng([dLat, dLng]);
+
+                // لو وصل عند المستخدم
+                if(Math.abs(dLat - userMarker.getLatLng().lat) < 0.0002) {
+                    clearInterval(interval);
+                    alert("لقد وصلت سيارة E-Max! السائق بالخارج 🚕");
+                    document.getElementById('status-text').innerText = "وصلت الرحلة ✅";
+                }
+            }, 1000);
         }
     </script>
 </body>
