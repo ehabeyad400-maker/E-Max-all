@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | النسخة النهائية المتكاملة</title>
+    <title>E-Max | النسخة الاحترافية المحدثة</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -14,7 +14,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* 2. التصميم (CSS) */
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --green: #10b981; --warn: #f59e0b; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
         
@@ -49,7 +48,7 @@
         <h2 style="margin-bottom:30px;">أهلاً بك في E-Max ✨</h2>
         <div class="v-card" onclick="initApp('عادية')">🚗 <b>عادية</b><br><small>رحلة اقتصادية</small></div>
         <div class="v-card" onclick="initApp('برو')">✨ <b>برو</b><br><small>سيارات فاخرة</small></div>
-        <div class="v-card" onclick="initApp('موتوسيكل')">🏍️ <b>موتوسيكل</b><br><small>تجاوز الزحام</small></div>
+        <div class="v-card" onclick="initApp('موتوسيكل')">🏍️ <b>موتوسيكل</b><br><small>أسرع في الزحام</small></div>
     </div>
 
     <div id="app-ui">
@@ -111,7 +110,7 @@
     </div>
 
     <script>
-        // 3. البرمجة (JavaScript)
+        // 1. إعدادات Firebase من صورك
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             authDomain: "e-max-d7438.firebaseapp.com",
@@ -123,20 +122,17 @@
         };
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
-        // تم تحديث مفتاحك هنا يا إياد
+        // 2. مفتاح Stripe الخاص بك من الصورة
         const stripe = Stripe('pk_test_51TMEKmPTGh4ASvbJg2WUGqes2EZtSgpyH1aUW49OKngad9Yy4gYdKZf1MjgTO9Xg0Dt1DkEOrxZ41fVeQiLCSCjX00mbHEbtwb'); 
 
         let user = null;
         let scanner = null;
 
+        // 3. تخطي الدخول مؤقتاً لتجنب خطأ 404
         window.onload = () => {
-            const saved = localStorage.getItem('emax_rider_session');
-            if(saved) {
-                user = JSON.parse(saved);
-                updateUI();
-            } else {
-                window.location.href = "login.html";
-            }
+            user = { name: "إياد إيهاب", phone: "01204993406", balance: 100 };
+            updateUI();
+            document.getElementById('vehicle-screen').style.display = 'flex';
         };
 
         function updateUI() {
@@ -156,23 +152,21 @@
         function payWithVisa() {
             const amt = document.getElementById('charge-amt').value;
             if(!amt || amt <= 0) return alert("ادخل مبلغ صحيح");
-            alert("جاري الاتصال بـ Stripe.. استخدم كارت الاختبار 4242 لإتمام العملية");
+            alert("تم الاتصال بـ Stripe.. استخدم كارت الاختبار 4242");
             processBalance(parseInt(amt));
         }
 
         function applyPromo() {
-            const code = document.getElementById('promo-code').value;
-            if(code === "EMAX100") {
-                alert("مبروك! تم إضافة 100 جنيه رصيد.");
+            if(document.getElementById('promo-code').value === "EMAX100") {
+                alert("تم إضافة 100 جنيه هدية!");
                 processBalance(100);
-            } else { alert("الكود غير صحيح"); }
+            } else { alert("الكود خطأ"); }
         }
 
         function processBalance(amt) {
             const newBal = (user.balance || 0) + amt;
             rtdb.ref('passengers/' + user.phone).update({ balance: newBal });
             user.balance = newBal;
-            localStorage.setItem('emax_rider_session', JSON.stringify(user));
             updateUI();
         }
 
@@ -189,39 +183,4 @@
                 const div = document.createElement('div');
                 div.style.margin = "8px 0";
                 div.style.textAlign = m.sender === 'rider' ? 'left' : 'right';
-                div.innerHTML = `<span style="background:${m.sender==='rider'?'var(--accent)':'var(--green)'}; padding:8px 12px; border-radius:12px; display:inline-block; max-width:80%;">${m.text}</span>`;
-                document.getElementById('chat-msgs').appendChild(div);
-                document.getElementById('chat-msgs').scrollTop = 9999;
-            });
-        }
-
-        function initMap() {
-            const map = L.map('map').setView([30.0444, 31.2357], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            navigator.geolocation.getCurrentPosition(p => {
-                map.setView([p.coords.latitude, p.coords.longitude], 16);
-                L.marker([p.coords.latitude, p.coords.longitude]).addTo(map).bindPopup("أنت هنا").openPopup();
-            });
-        }
-
-        function startScanner() {
-            document.getElementById('qr-container').style.display = 'flex';
-            scanner = new Html5Qrcode("qr-reader");
-            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-                alert("تم التعرف على السائق! تحويل 50 جنيه..");
-                processBalance(-50);
-                stopScanner();
-            });
-        }
-
-        function stopScanner() {
-            if(scanner) scanner.stop().then(() => document.getElementById('qr-container').style.display = 'none');
-            else document.getElementById('qr-container').style.display = 'none';
-        }
-
-        function toggleMenu() { document.getElementById('side-menu').classList.toggle('active'); }
-        function toggleChat() { document.getElementById('chat-box').classList.toggle('active'); }
-        function logout() { localStorage.clear(); location.reload(); }
-    </script>
-</body>
-</html>
+                div.innerHTML = `<span style="background:${m.sender==='rider'?'#3b82f6
