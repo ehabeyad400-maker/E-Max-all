@@ -3,23 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | Passenger</title>
+    <title>E-Max | تطبيق الراكب</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
-        :root { --bg: #0b0f19; --card: #161c2d; --accent: #3b82f6; --text: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .login-card { background: var(--card); padding: 30px; border-radius: 25px; text-align: center; width: 85%; max-width: 380px; border: 1px solid #2d3748; }
-        .logo { font-size: 35px; font-weight: bold; margin-bottom: 20px; }
+        :root { 
+            --bg: #0b0f19; 
+            --card: #161c2d; 
+            --accent: #3b82f6; 
+            --text: #ffffff; 
+            --input-bg: #1f2937;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            background: var(--bg); 
+            color: var(--text); 
+            height: 100vh; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        /* شاشة الدخول */
+        #login-screen { 
+            position: fixed; 
+            inset: 0; 
+            background: var(--bg); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 9999; 
+        }
+
+        .login-card { 
+            background: var(--card); 
+            padding: 40px 30px; 
+            border-radius: 30px; 
+            text-align: center; 
+            width: 90%; 
+            max-width: 400px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid #2d3748;
+        }
+
+        .logo { font-size: 40px; font-weight: 900; margin-bottom: 10px; letter-spacing: -1px; }
         .logo span { color: var(--accent); }
-        .btn-google { background: white; color: #000; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        #main-app { display: none; flex-grow: 1; flex-direction: column; height: 100vh; }
-        header { background: #161c2d; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        #map { flex-grow: 1; width: 100%; background: #242f3e; }
+
+        .btn-google { 
+            background: white; 
+            color: #000; 
+            border: none; 
+            padding: 15px; 
+            width: 100%; 
+            border-radius: 15px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 12px; 
+            font-size: 16px;
+            transition: 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-google:hover { background: #f1f1f1; transform: translateY(-2px); }
+
+        /* واجهة التطبيق الرئيسية */
+        #main-app { display: none; flex-direction: column; height: 100vh; width: 100%; }
+
+        header { 
+            background: var(--card); 
+            padding: 15px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .user-info { display: flex; align-items: center; gap: 10px; font-weight: bold; }
+        .balance-badge { background: var(--accent); padding: 5px 15px; border-radius: 20px; font-size: 14px; }
+
+        #map { flex-grow: 1; width: 100%; z-index: 1; }
     </style>
 </head>
 <body>
@@ -27,23 +101,31 @@
     <div id="login-screen">
         <div class="login-card">
             <div class="logo">E-<span>Max</span></div>
-            <p>مرحباً بك في مستقبل النقل في مصر</p>
+            <p style="color: #94a3b8; margin-bottom: 30px;">أهلاً بك في تطبيق الراكب</p>
+            
             <button class="btn-google" onclick="loginWithGoogle()">
-                <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width="20">
-                تسجيل دخول سريع بجوجل
+                <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width="24">
+                الدخول بواسطة جوجل
             </button>
         </div>
     </div>
 
     <div id="main-app">
         <header>
-            <div id="u-name">مرحباً..</div>
-            <div style="background:#3b82f6; padding:5px 15px; border-radius:20px;">💰 <span id="u-bal">0</span> ج.م</div>
+            <div class="user-info">
+                <div style="width: 35px; height: 35px; background: #3b82f6; border-radius: 50%; display: flex; justify-content: center; align-items: center;">👤</div>
+                <span id="u-name">الراكب</span>
+            </div>
+            <div class="balance-badge">
+                رصيدك: <span id="u-bal">0</span> ج.م
+            </div>
         </header>
+        
         <div id="map"></div>
     </div>
 
     <script>
+        // إعدادات Firebase المربوطة بمشروعك
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             authDomain: "e-max-d7438.firebaseapp.com",
@@ -52,25 +134,46 @@
             messagingSenderId: "394379576685",
             appId: "1:394379576685:web:a2ffe30d4132b5a62c4664"
         };
-        firebase.initializeApp(firebaseConfig);
 
+        // بدء تشغيل Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const rtdb = firebase.database();
+
+        // وظيفة تسجيل الدخول بجوجل
         function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithPopup(provider).then((result) => {
-                showApp(result.user.displayName);
-            }).catch(err => alert(err.message));
+            auth.signInWithPopup(provider).then((result) => {
+                const user = result.user;
+                // إظهار واجهة التطبيق وإرسال اسم المستخدم
+                launchApp(user.displayName);
+            }).catch((error) => {
+                alert("حدث خطأ أثناء تسجيل الدخول: " + error.message);
+            });
         }
 
-        function showApp(name) {
+        // تشغيل واجهة الخريطة والتطبيق
+        function launchApp(userName) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
-            document.getElementById('u-name').innerText = "يا هلا، " + name;
-            
-            // تشغيل الخريطة
+            document.getElementById('u-name').innerText = userName;
+
+            // تحديد موقع افتراضي (القاهرة/الإسكندرية)
+            const defaultLat = 31.2001; 
+            const defaultLng = 29.9187;
+
+            // تشغيل الخريطة بعد ثوانٍ بسيطة للتأكد من تحميل الـ Div
             setTimeout(() => {
-                var map = L.map('map').setView([31.2001, 29.9187], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                L.marker([31.2001, 29.9187]).addTo(map).bindPopup('موقعك الحالي').openPopup();
+                const map = L.map('map').setView([defaultLat, defaultLng], 13);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // إضافة علامة لموقع الراكب
+                L.marker([defaultLat, defaultLng]).addTo(map)
+                    .bindPopup('أنت هنا الآن')
+                    .openPopup();
             }, 500);
         }
     </script>
