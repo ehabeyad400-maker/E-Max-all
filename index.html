@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | Passenger Pro</title>
+    <title>E-Max | تطبيق الراكب</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -16,79 +16,96 @@
         :root { --bg: #0b0f19; --card: #161c2d; --accent: #3b82f6; --text: #ffffff; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* الهيدر */
-        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-bottom: 1px solid #2d3748; }
-        .icon-btn { cursor: pointer; font-size: 20px; background: none; border: none; color: white; }
-
         /* شاشة الدخول */
-        #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .login-card { background: var(--card); padding: 30px; border-radius: 25px; text-align: center; width: 85%; max-width: 380px; border: 1px solid #2d3748; }
-        .btn-google { background: white; color: black; padding: 12px; width: 100%; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; }
+        #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
+        .login-card { background: var(--card); padding: 30px; border-radius: 25px; text-align: center; width: 100%; max-width: 400px; border: 1px solid #2d3748; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .logo { font-size: 35px; font-weight: bold; margin-bottom: 20px; color: var(--text); }
+        .logo span { color: var(--accent); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 12px; border: 1px solid #2d3748; background: #0b0f19; color: white; box-sizing: border-box; outline: none; }
+        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-google { background: white; color: black; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .tabs { display: flex; gap: 10px; margin: 20px 0; border-bottom: 1px solid #2d3748; }
+        .tab { flex: 1; padding: 10px; cursor: pointer; color: #94a3b8; }
+        .tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
 
-        /* الخريطة */
+        /* الواجهة الرئيسية */
+        #main-app { display: none; height: 100vh; flex-direction: column; }
+        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
         #map { flex-grow: 1; width: 100%; }
 
-        /* القائمة الجانبية (Settings) */
-        #settings-panel { position: fixed; right: -300px; top: 0; width: 280px; height: 100%; background: var(--card); z-index: 2000; transition: 0.3s; padding: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.5); }
+        /* الإعدادات والجانبية */
+        #settings-panel { position: fixed; right: -300px; top: 0; width: 280px; height: 100%; background: var(--card); z-index: 2000; transition: 0.3s; padding: 20px; border-left: 1px solid #2d3748; }
         #settings-panel.active { right: 0; }
-        .profile-img { width: 70px; height: 70px; background: var(--accent); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
-
-        /* نافذة المحفظة */
-        #wallet-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; }
-        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
-        .pay-method { background: #1f2937; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; border: 1px solid #374151; }
-        .pay-method:hover { border-color: var(--accent); }
+        
+        /* المحفظة */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <div class="login-card">
-            <h2>E-Max</h2>
-            <button class="btn-google" onclick="loginWithGoogle()">
+            <div class="logo">E-<span>Max</span></div>
+            <button class="btn btn-google" onclick="loginWithGoogle()">
                 <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width="20">
-                تسجيل دخول سريع
+                دخول سريع بجوجل
             </button>
+            <div class="tabs">
+                <div class="tab active" id="tabEmail" onclick="toggleTab('email')">إيميل</div>
+                <div class="tab" id="tabPhone" onclick="toggleTab('phone')">موبايل</div>
+            </div>
+            <div id="emailForm">
+                <input type="email" id="emailInp" placeholder="البريد الإلكتروني">
+                <input type="password" id="passEmailInp" placeholder="كلمة المرور">
+                <button class="btn btn-primary" onclick="loginEmail()">دخول / تسجيل</button>
+            </div>
+            <div id="phoneForm" style="display:none;">
+                <input type="tel" id="phoneInp" placeholder="رقم الموبايل">
+                <input type="password" id="passPhoneInp" placeholder="كلمة المرور">
+                <button class="btn btn-primary" onclick="loginPhone()">دخول / تسجيل</button>
+            </div>
         </div>
     </div>
 
-    <div id="main-app" style="display:none; height: 100vh; flex-direction: column;">
+    <div id="main-app">
         <header>
-            <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
-            <div style="font-weight: bold;">E-MAX</div>
-            <button class="icon-btn" onclick="openWallet()">💰 <span id="u-bal">0</span></button>
+            <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="toggleSettings()">⚙️</button>
+            <div style="font-weight:bold; letter-spacing:1px;">E-MAX RIDER</div>
+            <button onclick="openWallet()" style="background:var(--accent); color:white; border:none; padding:8px 15px; border-radius:15px; cursor:pointer; font-weight:bold;">
+                💰 <span id="u-bal">0</span> ج.م
+            </button>
         </header>
-        
         <div id="map"></div>
     </div>
 
     <div id="settings-panel">
-        <button class="icon-btn" onclick="toggleSettings()">✖</button>
-        <div class="profile-img">👤</div>
-        <h3 id="p-name">الاسم</h3>
-        <p id="p-email" style="color: #94a3b8; font-size: 14px;">الإيميل</p>
-        <p id="p-phone" style="color: #94a3b8; font-size: 14px;">01xxxxxxxxx</p>
-        <hr style="border: 0.5px solid #2d3748; margin: 20px 0;">
-        <button onclick="logout()" style="color: #ef4444; background: none; border: none; cursor: pointer;">تسجيل الخروج</button>
+        <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="toggleSettings()">✖</button>
+        <div style="text-align:center; margin-top:20px;">
+            <div style="width:70px; height:70px; background:var(--accent); border-radius:50%; margin:0 auto; display:flex; align-items:center; justify-content:center; font-size:30px;">👤</div>
+            <h3 id="p-name">الاسم</h3>
+            <p id="p-id" style="font-size:12px; color:#94a3b8;"></p>
+        </div>
+        <hr style="border:0.5px solid #2d3748; margin:20px 0;">
+        <button onclick="logout()" style="width:100%; padding:10px; background:#ef4444; color:white; border:none; border-radius:10px; cursor:pointer;">تسجيل الخروج</button>
     </div>
 
-    <div id="wallet-modal">
-        <div class="modal-content">
-            <h3>شحن المحفظة</h3>
-            <div class="pay-method" onclick="alert('سوف يتم التحويل لـ فودافون كاش')">
-                <span>فودافون كاش</span> <span>📱</span>
-            </div>
-            <div class="pay-method" onclick="alert('سوف يتم فتح بوابة الفيزا')">
-                <span>بطاقة بنكية (Visa)</span> <span>💳</span>
-            </div>
-            <div class="pay-method" onclick="alert('كود شحن فورى: 12345')">
-                <span>فوري</span> <span>🏪</span>
-            </div>
-            <button onclick="closeWallet()" style="margin-top: 15px; background: none; border: 1px solid white; color: white; padding: 10px 20px; border-radius: 10px;">إغلاق</button>
+    <div id="walletModal" class="modal">
+        <div class="modal-content" style="border: 1px solid #ef4444;">
+            <h3 style="color:#ef4444;">شحن محفظة E-Max 📱</h3>
+            <p>حول المبلغ لرقمه الشخصي:</p>
+            <div style="background:#0b0f19; padding:15px; border-radius:12px; font-size:20px; font-weight:bold; color:#fff; border:1px dashed #ef4444; margin-bottom:15px;">
+                01019930581 </div>
+            <input type="number" id="vodaAmt" placeholder="المبلغ الذي حولته">
+            <input type="tel" id="vodaSender" placeholder="رقم محفظتك">
+            <button class="btn btn-primary" style="background:#ef4444;" onclick="sendDeposit()">إرسال طلب الشحن</button>
+            <button class="btn" style="background:none; color:white;" onclick="closeWallet()">إلغاء</button>
         </div>
     </div>
 
     <script>
+        // تكوين Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             authDomain: "e-max-d7438.firebaseapp.com",
@@ -98,76 +115,120 @@
             appId: "1:394379576685:web:a2ffe30d4132b5a62c4664"
         };
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const rtdb = firebase.database();
 
         let map, userMarker;
 
-        // 1. فحص الجلسة (عشان يفضل حافظ الدخول)
+        // فحص حالة الدخول عند فتح الصفحة
         window.onload = () => {
             const savedUser = localStorage.getItem('emax_user');
-            if (savedUser) {
-                launchApp(JSON.parse(savedUser));
-            }
-        };
+            if(savedUser) launchApp(JSON.parse(savedUser));
+        }
 
+        // تبديل بين فورم الإيميل والموبايل
+        function toggleTab(type) {
+            document.getElementById('emailForm').style.display = type === 'email' ? 'block' : 'none';
+            document.getElementById('phoneForm').style.display = type === 'phone' ? 'block' : 'none';
+            document.getElementById('tabEmail').classList.toggle('active', type === 'email');
+            document.getElementById('tabPhone').classList.toggle('active', type === 'phone');
+        }
+
+        // منطق تسجيل الدخول
         function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithPopup(provider).then((res) => {
-                const userData = {
-                    name: res.user.displayName,
-                    email: res.user.email,
-                    phone: res.user.phoneNumber || "لم يتم الربط",
-                    balance: 0
-                };
-                localStorage.setItem('emax_user', JSON.stringify(userData));
-                launchApp(userData);
-            }).catch(err => alert(err.message));
+            auth.signInWithPopup(provider).then(res => {
+                completeAuth(res.user.displayName, res.user.email);
+            });
+        }
+
+        function loginEmail() {
+            const email = document.getElementById('emailInp').value;
+            const pass = document.getElementById('passEmailInp').value;
+            if(!email || !pass) return alert("املا البيانات");
+            auth.signInWithEmailAndPassword(email, pass).then(res => {
+                completeAuth(email.split('@')[0], email);
+            }).catch(e => {
+                if(e.code === 'auth/user-not-found') auth.createUserWithEmailAndPassword(email, pass).then(res => completeAuth(email.split('@')[0], email));
+                else alert(e.message);
+            });
+        }
+
+        function loginPhone() {
+            const phone = document.getElementById('phoneInp').value;
+            const pass = document.getElementById('passPhoneInp').value;
+            if(!phone || !pass) return alert("املا البيانات");
+            rtdb.ref('passengers/'+phone).once('value', s => {
+                if(s.exists()){
+                    if(s.val().pass === pass) completeAuth(s.val().name, phone);
+                    else alert("باسورد غلط");
+                } else {
+                    rtdb.ref('passengers/'+phone).set({name: "عميل "+phone, id: phone, pass: pass, balance: 0});
+                    completeAuth("عميل "+phone, phone);
+                }
+            });
+        }
+
+        function completeAuth(name, id) {
+            const user = { name, id, balance: 0 };
+            localStorage.setItem('emax_user', JSON.stringify(user));
+            launchApp(user);
         }
 
         function launchApp(user) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
-            
-            // تحديث بيانات البروفايل
-            document.getElementById('u-bal').innerText = user.balance;
             document.getElementById('p-name').innerText = user.name;
-            document.getElementById('p-email').innerText = user.email;
-            document.getElementById('p-phone').innerText = user.phone;
+            document.getElementById('p-id').innerText = user.id;
+            
+            // مراقبة الرصيد الحقيقي من الداتابيز
+            rtdb.ref('passengers/'+user.id.replace(/\./g, '_')+'/balance').on('value', s => {
+                const bal = s.val() || 0;
+                document.getElementById('u-bal').innerText = bal;
+            });
 
             initMap();
         }
 
-        // 2. تحديد الموقع التلقائي
+        // تشغيل الخريطة والـ GPS
         function initMap() {
-            map = L.map('map').setView([30.0444, 31.2357], 15); // القاهرة كبداية
+            map = L.map('map').setView([30.0444, 31.2357], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
             if (navigator.geolocation) {
-                navigator.geolocation.watchPosition((pos) => {
+                navigator.geolocation.watchPosition(pos => {
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
-                    
-                    if (!userMarker) {
-                        userMarker = L.marker([lat, lng]).addTo(map).bindPopup("أنت هنا").openPopup();
+                    if(!userMarker) {
+                        userMarker = L.marker([lat, lng]).addTo(map).bindPopup("موقعك الحالي").openPopup();
                         map.setView([lat, lng], 16);
                     } else {
                         userMarker.setLatLng([lat, lng]);
                     }
-                }, (err) => console.log("خطأ في تحديد الموقع"), { enableHighAccuracy: true });
+                }, null, {enableHighAccuracy: true});
             }
         }
 
-        // 3. التحكم في الواجهة
-        function toggleSettings() {
-            document.getElementById('settings-panel').classList.toggle('active');
+        // نظام المحفظة والطلبات
+        function openWallet() { document.getElementById('walletModal').style.display = 'flex'; }
+        function closeWallet() { document.getElementById('walletModal').style.display = 'none'; }
+        
+        function sendDeposit() {
+            const amt = document.getElementById('vodaAmt').value;
+            const sender = document.getElementById('vodaSender').value;
+            const user = JSON.parse(localStorage.getItem('emax_user'));
+            if(!amt || !sender) return alert("اكمل بيانات التحويل");
+
+            rtdb.ref('deposit_requests').push({
+                uName: user.name, uId: user.id, amount: amt, sender: sender, status: 'pending', time: Date.now()
+            }).then(() => {
+                alert("تم إرسال الطلب! سيتم مراجعة تحويلك وإضافة الرصيد فوراً.");
+                closeWallet();
+            });
         }
 
-        function openWallet() { document.getElementById('wallet-modal').style.display = 'flex'; }
-        function closeWallet() { document.getElementById('wallet-modal').style.display = 'none'; }
-
-        function logout() {
-            localStorage.removeItem('emax_user');
-            location.reload();
-        }
+        function toggleSettings() { document.getElementById('settings-panel').classList.toggle('active'); }
+        function logout() { localStorage.removeItem('emax_user'); location.reload(); }
     </script>
 </body>
 </html>
