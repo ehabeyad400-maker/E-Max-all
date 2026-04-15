@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | النسخة العملاقة 🚀</title>
+    <title>E-Max | النسخة المتكاملة 🚀</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --green: #10b981; --red: #ef4444; --yellow: #f59e0b; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --green: #10b981; --red: #ef4444; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
         
         /* الشاشات */
@@ -23,13 +23,18 @@
         header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         #map { flex-grow: 1; z-index: 1; }
 
+        /* شاشة الإعدادات الجانبية */
+        #settings-screen { position: fixed; left: -100%; top: 0; width: 80%; max-width: 300px; height: 100%; background: var(--card); z-index: 12000; transition: 0.4s; padding: 30px 20px; box-shadow: 5px 0 20px rgba(0,0,0,0.5); }
+        #settings-screen.active { left: 0; }
+
         /* التحكم والعروض */
         .controls { position: fixed; bottom: 0; width: 100%; background: var(--card); padding: 20px; border-radius: 30px 30px 0 0; z-index: 1000; box-sizing: border-box; }
         #offers-screen { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); z-index: 11000; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
         .offer-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 10px; border-right: 5px solid var(--accent); text-align: right; }
         
-        .input-box { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .input-box { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; outline: none; }
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
         .btn-main { background: var(--accent); color: white; }
         .btn-sos { background: var(--red); color: white; width: 50px; height: 50px; border-radius: 50%; position: fixed; top: 80px; left: 20px; z-index: 500; font-size: 10px; display: flex; align-items: center; justify-content: center; }
     </style>
@@ -45,6 +50,21 @@
             <input type="password" id="pass" class="input-box" placeholder="Password">
             <button class="btn" style="background: #334155; color: white;" onclick="handleAuth()">دخول / تسجيل</button>
         </div>
+    </div>
+
+    <div id="settings-screen">
+        <h2 style="color: var(--accent);">إعدادات الحساب ⚙️</h2>
+        <p style="font-size: 12px; color: #94a3b8;">معلوماتك اللي هتظهر للسواق</p>
+        <hr border="0.5" color="#334155" style="margin-bottom: 20px;">
+        
+        <label>الاسم الكامل:</label>
+        <input type="text" id="user-name" class="input-box" placeholder="اسمك">
+        
+        <label>رقم التليفون:</label>
+        <input type="tel" id="user-phone" class="input-box" placeholder="01019930581">
+        
+        <button class="btn btn-main" onclick="saveProfile()">حفظ البيانات ✅</button>
+        <button class="btn" style="background:none; color: var(--red); margin-top: 20px;" onclick="toggleSettings()">إغلاق</button>
     </div>
 
     <div id="wallet-screen" class="screen" style="display:none;">
@@ -63,16 +83,15 @@
 
     <div id="offers-screen">
         <h2 style="text-align: center;">عروض السائقين 🔍</h2>
-        <div id="offers-list" style="flex:1;">
-            </div>
+        <div id="offers-list" style="flex:1;"></div>
         <button class="btn" style="background:var(--red); color:white;" onclick="cancelSearch()">إلغاء الطلب</button>
     </div>
 
     <div id="app-ui">
         <header>
+            <div onclick="toggleSettings()" style="cursor:pointer; font-size: 20px;">⚙️</div>
             <div onclick="toggleWallet(true)" style="background:var(--green); padding:5px 12px; border-radius:10px; cursor:pointer;">💳 <span id="balance">0</span> ج.م</div>
-            <div style="font-weight:bold;">E-MAX</div>
-            <div onclick="logout()" style="color:var(--red); cursor:pointer;">خروج</div>
+            <div onclick="logout()" style="color:var(--red); cursor:pointer; font-size: 14px;">خروج</div>
         </header>
 
         <div id="map"></div>
@@ -104,9 +123,11 @@
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('app-ui').style.display = 'flex';
                 initMap();
+                loadProfile();
                 syncUser();
             } else {
                 document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('app-ui').style.display = 'none';
             }
         });
 
@@ -116,6 +137,30 @@
             auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
         }
 
+        // --- وظائف الملف الشخصي ---
+        function toggleSettings() { document.getElementById('settings-screen').classList.toggle('active'); }
+        
+        function saveProfile() {
+            const name = document.getElementById('user-name').value;
+            const phone = document.getElementById('user-phone').value;
+            if(!name || !phone) return alert("من فضلك كمل بياناتك");
+            
+            rtdb.ref('users/' + userUid + '/profile').set({ name, phone })
+            .then(() => {
+                alert("تم حفظ بياناتك بنجاح!");
+                toggleSettings();
+            });
+        }
+
+        function loadProfile() {
+            rtdb.ref('users/' + userUid + '/profile').once('value', s => {
+                if(s.exists()) {
+                    document.getElementById('user-name').value = s.val().name;
+                    document.getElementById('user-phone').value = s.val().phone;
+                }
+            });
+        }
+
         function syncUser() {
             rtdb.ref('users/' + userUid + '/balance').on('value', s => {
                 document.getElementById('balance').innerText = s.val() || 0;
@@ -123,6 +168,7 @@
         }
 
         function initMap() {
+            if(map) return;
             map = L.map('map', {zoomControl: false}).setView([30.0444, 31.2357], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             navigator.geolocation.getCurrentPosition(p => {
@@ -131,7 +177,6 @@
                 userMarker = L.marker([lat, lng]).addTo(map).bindPopup("أنت هنا").openPopup();
             });
 
-            // جلب السواقين الحقيقيين (اللايف)
             rtdb.ref('drivers_online').on('value', snap => {
                 const drivers = snap.val();
                 for (let id in drivers) {
@@ -142,7 +187,7 @@
             });
         }
 
-        // وظائف المحفظة اليدوية
+        // --- وظائف المحفظة ---
         function toggleWallet(show) { document.getElementById('wallet-screen').style.display = show ? 'flex' : 'none'; }
         function copyNum() { navigator.clipboard.writeText("010XXXXXXXX"); alert("تم النسخ!"); }
         function sendWalletRequest() {
@@ -153,13 +198,24 @@
             toggleWallet(false);
         }
 
-        // نظام المزايدة (العروض)
+        // --- نظام المزايدة ---
         function requestRide() {
             const d = document.getElementById('dest').value;
+            const name = document.getElementById('user-name').value;
+            const phone = document.getElementById('user-phone').value;
+
+            if(!name || !phone) return alert("لازم تسجل اسمك ورقمك في الإعدادات الأول!");
             if(!d) return alert("اكتب الوجهة!");
+
             const rideRef = rtdb.ref('rides/').push();
             currentRideId = rideRef.key;
-            rideRef.set({ riderId: userUid, destination: d, status: 'searching' });
+            rideRef.set({ 
+                riderId: userUid, 
+                riderName: name,
+                riderPhone: phone,
+                destination: d, 
+                status: 'searching' 
+            });
             
             document.getElementById('offers-screen').style.display = 'flex';
             document.getElementById('offers-list').innerHTML = "";
@@ -174,14 +230,14 @@
                 div.innerHTML = `
                     <b>🚗 ${o.driverName}</b> <span style="color:var(--green)">(${o.price} ج.م)</span><br>
                     <small>🕒 يصل في ${o.arrivalTime} دقيقة</small><br>
-                    <button class="btn btn-main" style="margin-top:10px" onclick="acceptOffer('${o.price}')">قبول الرحلة</button>
+                    <button class="btn btn-main" style="margin-top:10px" onclick="acceptOffer('${o.price}', '${o.driverName}')">قبول الرحلة</button>
                 `;
                 document.getElementById('offers-list').appendChild(div);
             });
         }
 
-        function acceptOffer(price) {
-            alert("تم قبول العرض بسعر " + price + " ج.م. السائق في طريقه إليك!");
+        function acceptOffer(price, driver) {
+            alert("تم قبول عرض " + driver + " بسعر " + price + " ج.م.");
             document.getElementById('offers-screen').style.display = 'none';
         }
 
@@ -190,7 +246,7 @@
             document.getElementById('offers-screen').style.display = 'none';
         }
 
-        function sendSOS() { alert("تم إرسال موقعك للطوارئ والأدمن!"); }
+        function sendSOS() { alert("تم إرسال نداء استغاثة للأدمن!"); }
         function logout() { auth.signOut().then(() => location.reload()); }
     </script>
 </body>
