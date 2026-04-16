@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | Passenger 🚀</title>
+    <title>E-Max | Passenger</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -14,11 +14,10 @@
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
         .screen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
         #app-ui { display: none; height: 100vh; flex-direction: column; }
-        #map { flex-grow: 1; width: 100%; height: 100%; }
+        #map { flex-grow: 1; width: 100%; }
         .controls { padding: 15px; background: var(--card); border-radius: 20px 20px 0 0; position: relative; }
-        .btn { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; font-size: 14px; transition: 0.2s; }
-        .btn:active { transform: scale(0.98); }
-        .btn-sos { background: var(--red); color: white; width: 45px; height: 45px; border-radius: 50%; position: absolute; top: -55px; left: 15px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: none; box-shadow: 0 0 10px rgba(239,68,68,0.4); cursor: pointer; }
+        .btn { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; font-size: 14px; }
+        .btn-sos { background: var(--red); color: white; width: 45px; height: 45px; border-radius: 50%; position: absolute; top: -55px; left: 15px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: none; }
         .v-card { background: var(--card); width: 85%; max-width: 280px; padding: 12px; border-radius: 15px; margin: 8px auto; text-align: center; border: 1px solid #334155; cursor: pointer; font-size: 14px; }
         .input-box { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 14px; }
         #wallet-screen, #offers-screen, #active-ride-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 2000; padding: 15px; overflow-y: auto; }
@@ -48,10 +47,10 @@
         <div id="map"></div>
         <div class="controls">
             <button class="btn-sos" onclick="sendSOS()">SOS</button>
-            <input type="text" id="dest" class="input-box" placeholder="إلى أين ستذهب؟">
+            <input type="text" id="dest" class="input-box" placeholder="رايح فين؟">
             <select id="pay-method" class="input-box">
                 <option value="cash">💵 كاش للسائق</option>
-                <option value="wallet">💳 من محفظة E-Max</option>
+                <option value="wallet">💳 من المحفظة</option>
             </select>
             <button class="btn" style="background:var(--accent); color:white;" onclick="requestRide()">اطلب وشوف العروض ✅</button>
         </div>
@@ -59,27 +58,25 @@
 
     <div id="wallet-screen">
         <h3>المحفظة 💳</h3>
-        <p style="font-size:13px; background:#1e293b; padding:10px; border-radius:10px;">حول لـ: <b style="color:var(--green)">010XXXXXXXX</b></p>
+        <p style="font-size:13px; background:#1e293b; padding:10px; border-radius:10px;">حول لـ: <b style="color:var(--green)">01019930581</b></p>
         <input type="number" id="w-amt" class="input-box" placeholder="المبلغ">
-        <input type="text" id="w-phone" class="input-box" placeholder="رقمك المحول منه">
+        <input type="text" id="w-phone" class="input-box" placeholder="رقم المحفظة المحول منها">
         <button class="btn" style="background:var(--green); color:white;" onclick="sendWalletRequest()">تأكيد الإيداع</button>
         <button class="btn" style="background:none; color:#94a3b8" onclick="toggleWallet(false)">إغلاق</button>
     </div>
 
     <div id="offers-screen">
-        <h3 style="text-align:center;">عروض الكباتن القريبة 📡</h3>
+        <h3 style="text-align:center;">عروض الكباتن 📡</h3>
         <div id="offers-list"></div>
         <button class="btn" style="background:var(--red); color:white; margin-top:15px;" onclick="cancelRide()">إلغاء الطلب</button>
     </div>
 
     <div id="active-ride-screen">
         <div class="v-card" style="max-width:100%; cursor:default;">
-            <h3 id="ride-status" style="color:var(--green)">تم القبول! الكابتن في الطريق</h3>
+            <h3 id="ride-status" style="color:var(--green)">الكابتن في الطريق!</h3>
             <h2 id="act-driver-name" style="margin:5px 0;">--</h2>
-            <p id="act-car" style="font-size:12px; color:#94a3b8; margin:0;">--</p>
             <b id="act-price" style="font-size:26px; color:var(--green); display:block; margin:10px 0;">0 ج.م</b>
-            <div style="font-size:13px; margin-bottom:15px;">يصلك خلال: <span id="act-time" style="color:var(--accent)">0</span> دقيقة</div>
-            <a id="call-btn" href="#" class="btn" style="background:var(--green); color:white; text-decoration:none; display:block;">📞 اتصل بالكابتن</a>
+            <a id="call-btn" href="#" class="btn" style="background:var(--green); color:white; text-decoration:none; display:block; text-align:center;">📞 اتصل</a>
             <button class="btn" style="background:none; color:var(--red); border:1px solid var(--red); margin-top:10px;" onclick="cancelRide()">إلغاء الرحلة</button>
         </div>
     </div>
@@ -94,16 +91,25 @@
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
         const auth = firebase.auth();
-        let userUid, currentRideId, selectedType, map, userBalance = 0;
+        let userUid, currentRideId, selectedType, map;
 
         auth.onAuthStateChanged(user => {
             if(user) {
                 userUid = user.uid;
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('vehicle-screen').style.display = 'flex';
-                rtdb.ref('users/'+userUid+'/balance').on('value', s => {
-                    userBalance = s.val() || 0;
-                    document.getElementById('balance').innerText = userBalance;
+                
+                // تحديث الرصيد
+                rtdb.ref('users/'+userUid+'/balance').on('value', s => document.getElementById('balance').innerText = s.val() || 0);
+
+                // 🔥 مراقبة طلبات الإيداع (التحديث التلقائي)
+                rtdb.ref('deposit_requests').orderByChild('uid').equalTo(userUid).on('child_changed', snap => {
+                    const req = snap.val();
+                    if(req.status === 'approved' && !req.processed) {
+                        rtdb.ref('users/'+userUid+'/balance').transaction(b => (b || 0) + parseInt(req.amount));
+                        rtdb.ref('deposit_requests/'+snap.key).update({processed: true});
+                        alert("✅ تم إضافة " + req.amount + " ج.م لرصيدك!");
+                    }
                 });
             }
         });
@@ -114,85 +120,57 @@
             selectedType = type;
             document.getElementById('vehicle-screen').style.display = 'none';
             document.getElementById('app-ui').style.display = 'flex';
-            setTimeout(initMap, 200);
-        }
-
-        function initMap() {
-            if(map) return;
-            map = L.map('map', {zoomControl: false}).setView([30.04, 31.23], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            navigator.geolocation.getCurrentPosition(p => {
-                map.setView([p.coords.latitude, p.coords.longitude], 16);
-                L.marker([p.coords.latitude, p.coords.longitude]).addTo(map);
-            });
+            setTimeout(() => {
+                map = L.map('map', {zoomControl: false}).setView([30.04, 31.23], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            }, 200);
         }
 
         function requestRide() {
             const dest = document.getElementById('dest').value;
-            const method = document.getElementById('pay-method').value;
-            if(!dest) return alert("حدد الوجهة أولاً");
-            
+            const pay = document.getElementById('pay-method').value;
+            if(!dest) return alert("حدد الوجهة");
             const rideRef = rtdb.ref('rides/').push();
             currentRideId = rideRef.key;
             rideRef.set({
                 riderId: userUid, riderName: auth.currentUser.displayName,
                 destination: dest, type: selectedType, status: 'searching',
-                payMethod: method, riderPhone: "01XXXXXXXXX" 
+                payMethod: pay, riderPhone: "01XXXXXXXXX"
             });
             document.getElementById('offers-screen').style.display = 'flex';
-            document.getElementById('offers-list').innerHTML = "<p>جاري البحث...</p>";
             listenToOffers();
         }
 
         function listenToOffers() {
             rtdb.ref('offers/' + currentRideId).on('child_added', snap => {
                 const o = snap.val();
-                const list = document.getElementById('offers-list');
-                if(list.innerText.includes("جاري البحث")) list.innerHTML = "";
                 const div = document.createElement('div');
                 div.className = 'offer-card';
-                div.innerHTML = `
-                    <b>🚕 ${o.driverName}</b> - ${o.carModel}<br>
-                    <small>السعر: ${o.price} ج.م | وصول: ${o.arrivalTime} د</small><br>
-                    <button class="btn" style="background:var(--accent); color:white; margin-top:8px; padding:6px;" 
-                    onclick="confirmOffer('${snap.key}','${o.driverName}','${o.price}','${o.driverPhone}','${o.arrivalTime}','${o.carModel}')">قبول العرض</button>
-                `;
-                list.appendChild(div);
+                div.innerHTML = `<b>🚕 ${o.driverName}</b><br><small>${o.price} ج.م | ${o.arrivalTime} د</small><br>
+                <button class="btn" style="background:var(--accent); color:white;" onclick="confirmOffer('${snap.key}','${o.driverName}','${o.price}','${o.driverPhone}')">قبول</button>`;
+                document.getElementById('offers-list').appendChild(div);
             });
-            // مراقبة إنهاء الرحلة
-            rtdb.ref('rides/'+currentRideId+'/status').on('value', s => {
-                if(s.val() === 'completed') { alert("وصلت بسلام! تم إنهاء الرحلة."); location.reload(); }
-            });
+            rtdb.ref('rides/'+currentRideId+'/status').on('value', s => { if(s.val()==='completed') location.reload(); });
         }
 
-        function confirmOffer(dId, dName, price, phone, time, car) {
-            rtdb.ref('rides/' + currentRideId).update({
-                status: 'accepted', driverId: dId, finalPrice: price, driverPhone: phone, arrivalTime: time, carInfo: car
-            }).then(() => {
-                document.getElementById('offers-screen').style.display = 'none';
-                document.getElementById('active-ride-screen').style.display = 'flex';
-                document.getElementById('act-driver-name').innerText = dName;
-                document.getElementById('act-price').innerText = price + " ج.م";
-                document.getElementById('act-time').innerText = time;
-                document.getElementById('act-car').innerText = car;
-                document.getElementById('call-btn').href = "tel:" + phone;
-            });
-        }
-
-        function cancelRide() {
-            if(confirm("إلغاء الطلب؟")) {
-                rtdb.ref('rides/' + currentRideId).update({status: 'cancelled'}).then(() => location.reload());
-            }
+        function confirmOffer(dId, dName, price, phone) {
+            rtdb.ref('rides/' + currentRideId).update({status: 'accepted', driverId: dId, finalPrice: price, driverPhone: phone});
+            document.getElementById('offers-screen').style.display = 'none';
+            document.getElementById('active-ride-screen').style.display = 'flex';
+            document.getElementById('act-driver-name').innerText = dName;
+            document.getElementById('act-price').innerText = price + " ج.م";
+            document.getElementById('call-btn').href = "tel:" + phone;
         }
 
         function sendWalletRequest() {
             const amt = document.getElementById('w-amt').value;
             if(!amt) return;
-            rtdb.ref('deposit_requests').push({uid: userUid, amount: amt, status: 'pending', time: Date.now()});
-            alert("طلبك قيد المراجعة"); toggleWallet(false);
+            rtdb.ref('deposit_requests').push({uid: userUid, amount: amt, status: 'pending', processed: false});
+            alert("تم إرسال الطلب!"); toggleWallet(false);
         }
 
-        function sendSOS() { rtdb.ref('sos').push({uid: userUid, time: Date.now()}); alert("🚨 تم إرسال استغاثة بموقعك!"); }
+        function cancelRide() { rtdb.ref('rides/' + currentRideId).update({status: 'cancelled'}).then(()=>location.reload()); }
+        function sendSOS() { rtdb.ref('sos').push({uid: userUid, time: Date.now()}); alert("تم إرسال SOS!"); }
         function toggleWallet(s) { document.getElementById('wallet-screen').style.display = s ? 'flex' : 'none'; }
         function logout() { auth.signOut().then(() => location.reload()); }
     </script>
