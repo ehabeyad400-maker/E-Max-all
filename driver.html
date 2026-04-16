@@ -2,52 +2,127 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>E-Max | Driver</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Max | Driver Dashboard 🚕</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; margin: 0; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .login-card { background: linear-gradient(145deg, #1e293b, #0f172a); padding: 50px; border-radius: 35px; text-align: center; border: 1px solid #10b981; width: 90%; max-width: 400px; }
-        .btn-google { background: white; color: black; padding: 15px; border-radius: 15px; border: none; width: 100%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; }
-        #dashboard { display: none; padding: 20px; text-align: center; width: 100%; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #10b981; --text: #f8fafc; --blue: #3b82f6; --red: #ef4444; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        .container { max-width: 500px; margin: auto; }
+        .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .input-box { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-primary { background: var(--blue); color: white; }
+        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; margin-bottom: 15px; }
+        .pending { background: #f59e0b; color: black; }
+        .approved { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
-    <div id="auth-section" class="login-card">
-        <h1 style="color:#10b981;">E-MAX DRIVER</h1>
-        <p>سجل دخولك ككابتن وابدأ الرحلة</p>
-        <button class="btn-google" onclick="driverGoogleLogin()">
-            <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width="25">
-            الدخول بواسطة جوجل
-        </button>
+
+<div class="container">
+    <div id="auth-check">
+        <div id="reg-form" class="card">
+            <h2 style="text-align: center; color: var(--blue);">انضم لكباتن E-Max 🚕</h2>
+            <input type="text" id="name" class="input-box" placeholder="الاسم بالكامل">
+            <input type="tel" id="phone" class="input-box" placeholder="رقم الموبايل">
+            <input type="text" id="idCard" class="input-box" placeholder="رقم البطاقة">
+            <input type="text" id="license" class="input-box" placeholder="رقم الرخصة">
+            <input type="text" id="carInfo" class="input-box" placeholder="نوع السيارة (مثلاً: هيونداي النترا 2020)">
+            <button class="btn btn-primary" onclick="submitApplication()">إرسال الطلب للأدمن</button>
+        </div>
+
+        <div id="wait-screen" class="card" style="display: none; text-align: center;">
+            <div class="status-badge pending">قيد المراجعة ⏳</div>
+            <h3>طلبك وصل يا بطل!</h3>
+            <p>الأدمن بيراجع بياناتك دلوقتي، أول ما يوافق الحساب هيفتح معاك تلقائياً.</p>
+        </div>
+
+        <div id="work-screen" class="card" style="display: none;">
+            <div class="status-badge approved">حساب مفعّل ✅</div>
+            <h3>رادار الرحلات 📡</h3>
+            <div id="rides-list">
+                <p style="color: #94a3b8;">في انتظار طلبات الركاب...</p>
+            </div>
+        </div>
     </div>
+</div>
 
-    <div id="dashboard">
-        <h1>أهلاً بك يا كابتن 🚕</h1>
-        <div style="background:#1e293b; padding:20px; border-radius:15px;">في انتظار طلبات الركاب...</div>
-    </div>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
+        authDomain: "e-max-d7438.firebaseapp.com",
+        databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
+        projectId: "e-max-d7438",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const rtdb = firebase.database();
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
-            authDomain: "e-max-d7438.firebaseapp.com",
-            projectId: "e-max-d7438",
-            storageBucket: "e-max-d7438.firebasestorage.app",
-            messagingSenderId: "394379576685",
-            appId: "1:394379576685:web:a2ffe30d4132b5a62c4664",
-            measurementId: "G-MRQTSC468P"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+    let currentUid;
 
-        function driverGoogleLogin() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).then(() => {
-                document.getElementById('auth-section').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-            }).catch(err => alert(err.message));
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            currentUid = user.uid;
+            checkDriverStatus();
+        } else {
+            auth.signInAnonymously();
         }
-    </script>
+    });
+
+    function submitApplication() {
+        const d = {
+            name: document.getElementById('name').value,
+            phone: document.getElementById('phone').value,
+            idCard: document.getElementById('idCard').value,
+            license: document.getElementById('license').value,
+            car: document.getElementById('carInfo').value,
+            status: 'pending' // دي اللي أنت كأدمن هتغيرها
+        };
+
+        if(!d.name || !d.phone) return alert("اكمل البيانات");
+        
+        rtdb.ref('drivers/' + currentUid).set(d).then(() => {
+            alert("تم التقديم!");
+        });
+    }
+
+    function checkDriverStatus() {
+        rtdb.ref('drivers/' + currentUid).on('value', snap => {
+            const data = snap.val();
+            if(!data) return;
+
+            if(data.status === 'pending') {
+                document.getElementById('reg-form').style.display = 'none';
+                document.getElementById('wait-screen').style.display = 'block';
+            } else if(data.status === 'approved') {
+                document.getElementById('reg-form').style.display = 'none';
+                document.getElementById('wait-screen').style.display = 'none';
+                document.getElementById('work-screen').style.display = 'block';
+                startRadar();
+            }
+        });
+    }
+
+    function startRadar() {
+        // الربط مع قسم rides اللي في صورتك
+        rtdb.ref('rides').on('child_added', snap => {
+            const ride = snap.val();
+            if(ride.status === 'searching') {
+                const list = document.getElementById('rides-list');
+                const div = document.createElement('div');
+                div.style = "background:#0f172a; padding:15px; border-radius:15px; margin-top:10px;";
+                div.innerHTML = `
+                    <b>📍 الوجهة: ${ride.destination}</b><br>
+                    <small>الراكب: ${ride.riderName}</small><br>
+                    <button class="btn btn-primary" style="margin-top:10px; background:#10b981;" onclick="acceptRide('${snap.key}')">قبول الرحلة</button>
+                `;
+                list.appendChild(div);
+            }
+        });
+    }
+</script>
 </body>
 </html>
