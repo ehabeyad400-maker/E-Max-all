@@ -11,72 +11,76 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --red: #ef4444; --green: #10b981; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
         .screen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
         #app-ui { display: none; height: 100vh; flex-direction: column; }
-        #map { flex-grow: 1; width: 100%; }
-        .controls { padding: 20px; background: var(--card); border-radius: 25px 25px 0 0; position: relative; }
-        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        .btn-sos { background: var(--red); color: white; width: 50px; height: 50px; border-radius: 50%; position: absolute; top: -60px; left: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
-        .input-box { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        #wallet-screen, #offers-screen, #active-ride-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 2000; padding: 20px; overflow-y: auto; }
-        .offer-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 10px; border-right: 5px solid var(--accent); }
+        #map { flex-grow: 1; width: 100%; height: 100%; }
+        .controls { padding: 15px; background: var(--card); border-radius: 20px 20px 0 0; position: relative; }
+        .btn { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; font-size: 14px; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-sos { background: var(--red); color: white; width: 45px; height: 45px; border-radius: 50%; position: absolute; top: -55px; left: 15px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: none; box-shadow: 0 0 10px rgba(239,68,68,0.4); cursor: pointer; }
+        .v-card { background: var(--card); width: 85%; max-width: 280px; padding: 12px; border-radius: 15px; margin: 8px auto; text-align: center; border: 1px solid #334155; cursor: pointer; font-size: 14px; }
+        .input-box { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 14px; }
+        #wallet-screen, #offers-screen, #active-ride-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 2000; padding: 15px; overflow-y: auto; }
+        .offer-card { background: var(--card); padding: 12px; border-radius: 12px; margin-bottom: 10px; border-right: 4px solid var(--accent); }
     </style>
 </head>
 <body>
 
     <div id="auth-screen" class="screen">
-        <h1 style="color:var(--accent); font-size: 40px;">E-MAX</h1>
-        <button class="btn" style="background:#4285F4; color:white; max-width: 300px;" onclick="loginWithGoogle()">🔵 الدخول بحساب Google</button>
+        <h1 style="color:var(--accent); font-size: 35px; margin-bottom: 20px;">E-MAX</h1>
+        <button class="btn" style="background:#4285F4; color:white; max-width: 250px;" onclick="loginWithGoogle()">🔵 دخول بواسطة Google</button>
     </div>
 
     <div id="vehicle-screen" class="screen" style="display: none;">
-        <h2>أهلاً بك.. اختر وسيلة التنقل ✨</h2>
-        <div style="width:100%; max-width:350px;">
-            <div class="btn" style="background:var(--card); margin:10px 0; padding:20px; text-align:center;" onclick="selectVehicle('عادية')">🚕 عادية</div>
-            <div class="btn" style="background:var(--card); margin:10px 0; padding:20px; text-align:center;" onclick="selectVehicle('برو')">✨ برو (سيارات حديثة)</div>
-            <div class="btn" style="background:var(--card); margin:10px 0; padding:20px; text-align:center;" onclick="selectVehicle('موتوسيكل')">🏍️ موتوسيكل</div>
-        </div>
+        <h3 style="margin-bottom: 15px;">اختر نوع الرحلة 🚕</h3>
+        <div class="v-card" onclick="selectVehicle('عادية')">🚕 عادية</div>
+        <div class="v-card" onclick="selectVehicle('برو')">✨ برو</div>
+        <div class="v-card" onclick="selectVehicle('موتوسيكل')">🏍️ موتوسيكل</div>
     </div>
 
     <div id="app-ui">
-        <div style="padding:15px; display:flex; justify-content:space-between; background:var(--card); align-items:center;">
-            <div onclick="toggleWallet(true)" style="cursor:pointer; background:#0f172a; padding:5px 15px; border-radius:10px;">💳 <span id="balance">0</span> ج.م</div>
-            <div style="font-weight:bold; color:var(--accent);">E-MAX</div>
-            <div onclick="logout()" style="color:var(--red); font-size:12px;">خروج</div>
+        <div style="padding:10px 15px; display:flex; justify-content:space-between; background:var(--card); align-items:center;">
+            <div onclick="toggleWallet(true)" style="cursor:pointer; background:#0f172a; padding:5px 12px; border-radius:8px; font-size:13px;">💳 <span id="balance">0</span> ج.م</div>
+            <div style="font-weight:bold; color:var(--accent); font-size:18px;">E-MAX</div>
+            <div onclick="logout()" style="color:var(--red); font-size:11px;">خروج</div>
         </div>
         <div id="map"></div>
         <div class="controls">
-            <div class="btn-sos" onclick="sendSOS()">SOS</div>
-            <input type="text" id="dest" class="input-box" placeholder="إلى أين تريد الذهاب؟">
+            <button class="btn-sos" onclick="sendSOS()">SOS</button>
+            <input type="text" id="dest" class="input-box" placeholder="إلى أين ستذهب؟">
+            <select id="pay-method" class="input-box">
+                <option value="cash">💵 كاش للسائق</option>
+                <option value="wallet">💳 من محفظة E-Max</option>
+            </select>
             <button class="btn" style="background:var(--accent); color:white;" onclick="requestRide()">اطلب وشوف العروض ✅</button>
         </div>
     </div>
 
     <div id="wallet-screen">
-        <h3>محفظة E-Max 💳</h3>
-        <p style="background:var(--card); padding:15px; border-radius:10px;">رقم التحويل (فودافون كاش): <br><b style="color:var(--green)">01019930581</b></p>
+        <h3>المحفظة 💳</h3>
+        <p style="font-size:13px; background:#1e293b; padding:10px; border-radius:10px;">حول لـ: <b style="color:var(--green)">010XXXXXXXX</b></p>
         <input type="number" id="w-amt" class="input-box" placeholder="المبلغ">
-        <input type="text" id="w-phone" class="input-box" placeholder="رقمك اللي حولت منه">
-        <button class="btn" style="background:var(--green); color:white;" onclick="sendWalletRequest()">إرسال طلب إيداع</button>
-        <button class="btn" style="background:none;" onclick="toggleWallet(false)">إغلاق</button>
+        <input type="text" id="w-phone" class="input-box" placeholder="رقمك المحول منه">
+        <button class="btn" style="background:var(--green); color:white;" onclick="sendWalletRequest()">تأكيد الإيداع</button>
+        <button class="btn" style="background:none; color:#94a3b8" onclick="toggleWallet(false)">إغلاق</button>
     </div>
 
     <div id="offers-screen">
-        <h2 style="text-align:center;">بحثاً عن أفضل العروض 📡</h2>
+        <h3 style="text-align:center;">عروض الكباتن القريبة 📡</h3>
         <div id="offers-list"></div>
-        <button class="btn" style="background:var(--red); color:white; margin-top:20px;" onclick="cancelRide()">إلغاء الطلب</button>
+        <button class="btn" style="background:var(--red); color:white; margin-top:15px;" onclick="cancelRide()">إلغاء الطلب</button>
     </div>
 
     <div id="active-ride-screen">
-        <div style="background:var(--card); padding:25px; border-radius:25px; text-align:center;">
-            <h3 id="ride-status" style="color:var(--green)">السائق وافق وفي الطريق إليك!</h3>
-            <h1 id="act-driver-name">--</h1>
-            <p id="act-car">--</p>
-            <b id="act-price" style="font-size:30px; color:var(--green)">0 ج.م</b><br>
-            <div style="background:#0f172a; padding:10px; border-radius:10px; margin:15px 0;">وقت الوصول المتوقع: <span id="act-time" style="color:var(--accent)">0</span> دقيقة</div>
+        <div class="v-card" style="max-width:100%; cursor:default;">
+            <h3 id="ride-status" style="color:var(--green)">تم القبول! الكابتن في الطريق</h3>
+            <h2 id="act-driver-name" style="margin:5px 0;">--</h2>
+            <p id="act-car" style="font-size:12px; color:#94a3b8; margin:0;">--</p>
+            <b id="act-price" style="font-size:26px; color:var(--green); display:block; margin:10px 0;">0 ج.م</b>
+            <div style="font-size:13px; margin-bottom:15px;">يصلك خلال: <span id="act-time" style="color:var(--accent)">0</span> دقيقة</div>
             <a id="call-btn" href="#" class="btn" style="background:var(--green); color:white; text-decoration:none; display:block;">📞 اتصل بالكابتن</a>
-            <button class="btn" style="background:var(--red); color:white; margin-top:15px;" onclick="cancelRide()">إلغاء الرحلة</button>
+            <button class="btn" style="background:none; color:var(--red); border:1px solid var(--red); margin-top:10px;" onclick="cancelRide()">إلغاء الرحلة</button>
         </div>
     </div>
 
@@ -90,15 +94,17 @@
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
         const auth = firebase.auth();
-
-        let userUid, currentRideId, selectedType, map;
+        let userUid, currentRideId, selectedType, map, userBalance = 0;
 
         auth.onAuthStateChanged(user => {
             if(user) {
                 userUid = user.uid;
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('vehicle-screen').style.display = 'flex';
-                rtdb.ref('users/'+userUid+'/balance').on('value', s => document.getElementById('balance').innerText = s.val() || 0);
+                rtdb.ref('users/'+userUid+'/balance').on('value', s => {
+                    userBalance = s.val() || 0;
+                    document.getElementById('balance').innerText = userBalance;
+                });
             }
         });
 
@@ -108,7 +114,7 @@
             selectedType = type;
             document.getElementById('vehicle-screen').style.display = 'none';
             document.getElementById('app-ui').style.display = 'flex';
-            setTimeout(initMap, 100);
+            setTimeout(initMap, 200);
         }
 
         function initMap() {
@@ -116,29 +122,25 @@
             map = L.map('map', {zoomControl: false}).setView([30.04, 31.23], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             navigator.geolocation.getCurrentPosition(p => {
-                const lat = p.coords.latitude, lng = p.coords.longitude;
-                map.setView([lat, lng], 16);
-                L.marker([lat, lng]).addTo(map).bindPopup("أنت هنا").openPopup();
+                map.setView([p.coords.latitude, p.coords.longitude], 16);
+                L.marker([p.coords.latitude, p.coords.longitude]).addTo(map);
             });
         }
 
         function requestRide() {
             const dest = document.getElementById('dest').value;
-            if(!dest) return alert("من فضلك حدد الوجهة");
+            const method = document.getElementById('pay-method').value;
+            if(!dest) return alert("حدد الوجهة أولاً");
             
             const rideRef = rtdb.ref('rides/').push();
             currentRideId = rideRef.key;
             rideRef.set({
-                riderId: userUid,
-                riderName: auth.currentUser.displayName || "عميل E-Max",
-                riderPhone: "01XXXXXXXXX", // يفضل عمل بروفايل للسؤال عنها
-                destination: dest,
-                type: selectedType,
-                status: 'searching'
+                riderId: userUid, riderName: auth.currentUser.displayName,
+                destination: dest, type: selectedType, status: 'searching',
+                payMethod: method, riderPhone: "01XXXXXXXXX" 
             });
-
             document.getElementById('offers-screen').style.display = 'flex';
-            document.getElementById('offers-list').innerHTML = "<p style='text-align:center;'>جاري البحث عن كباتن قريبة...</p>";
+            document.getElementById('offers-list').innerHTML = "<p>جاري البحث...</p>";
             listenToOffers();
         }
 
@@ -147,27 +149,25 @@
                 const o = snap.val();
                 const list = document.getElementById('offers-list');
                 if(list.innerText.includes("جاري البحث")) list.innerHTML = "";
-                
                 const div = document.createElement('div');
                 div.className = 'offer-card';
                 div.innerHTML = `
                     <b>🚕 ${o.driverName}</b> - ${o.carModel}<br>
-                    <span style="color:var(--green)">السعر: ${o.price} ج.م</span> | <span style="color:var(--accent)">يصل خلال: ${o.arrivalTime} د</span><br>
-                    <button class="btn" style="background:var(--accent); color:white; margin-top:10px;" 
-                        onclick="confirmOffer('${snap.key}', '${o.driverName}', '${o.price}', '${o.driverPhone}', '${o.arrivalTime}', '${o.carModel}')">قبول العرض</button>
+                    <small>السعر: ${o.price} ج.م | وصول: ${o.arrivalTime} د</small><br>
+                    <button class="btn" style="background:var(--accent); color:white; margin-top:8px; padding:6px;" 
+                    onclick="confirmOffer('${snap.key}','${o.driverName}','${o.price}','${o.driverPhone}','${o.arrivalTime}','${o.carModel}')">قبول العرض</button>
                 `;
                 list.appendChild(div);
+            });
+            // مراقبة إنهاء الرحلة
+            rtdb.ref('rides/'+currentRideId+'/status').on('value', s => {
+                if(s.val() === 'completed') { alert("وصلت بسلام! تم إنهاء الرحلة."); location.reload(); }
             });
         }
 
         function confirmOffer(dId, dName, price, phone, time, car) {
             rtdb.ref('rides/' + currentRideId).update({
-                status: 'accepted',
-                driverId: dId,
-                finalPrice: price,
-                driverPhone: phone,
-                arrivalTime: time,
-                carInfo: car
+                status: 'accepted', driverId: dId, finalPrice: price, driverPhone: phone, arrivalTime: time, carInfo: car
             }).then(() => {
                 document.getElementById('offers-screen').style.display = 'none';
                 document.getElementById('active-ride-screen').style.display = 'flex';
@@ -180,30 +180,19 @@
         }
 
         function cancelRide() {
-            if(!currentRideId) return;
-            if(confirm("هل تريد إلغاء الطلب؟")) {
-                rtdb.ref('rides/' + currentRideId).update({status: 'cancelled'}).then(() => {
-                    location.reload();
-                });
+            if(confirm("إلغاء الطلب؟")) {
+                rtdb.ref('rides/' + currentRideId).update({status: 'cancelled'}).then(() => location.reload());
             }
         }
 
         function sendWalletRequest() {
             const amt = document.getElementById('w-amt').value;
-            const ph = document.getElementById('w-phone').value;
-            if(!amt || !ph) return alert("اكمل بيانات التحويل");
-            rtdb.ref('deposit_requests').push({
-                uid: userUid, amount: amt, phone: ph, status: 'pending', time: Date.now()
-            });
-            alert("تم إرسال الطلب، سيتم مراجعته وإضافة الرصيد");
-            toggleWallet(false);
+            if(!amt) return;
+            rtdb.ref('deposit_requests').push({uid: userUid, amount: amt, status: 'pending', time: Date.now()});
+            alert("طلبك قيد المراجعة"); toggleWallet(false);
         }
 
-        function sendSOS() {
-            alert("⚠️ تم إرسال نداء استغاثة SOS لموقعك الحالي!");
-            rtdb.ref('sos').push({uid: userUid, time: Date.now(), status: 'emergency'});
-        }
-
+        function sendSOS() { rtdb.ref('sos').push({uid: userUid, time: Date.now()}); alert("🚨 تم إرسال استغاثة بموقعك!"); }
         function toggleWallet(s) { document.getElementById('wallet-screen').style.display = s ? 'flex' : 'none'; }
         function logout() { auth.signOut().then(() => location.reload()); }
     </script>
