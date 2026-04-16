@@ -7,6 +7,53 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script> // ... (ضع هذا الجزء داخل الـ Script في ملف driver.html)
+
+function startRadar() {
+    const list = document.getElementById('rides-list');
+    // تنظيف القائمة قبل العرض
+    list.innerHTML = "";
+
+    rtdb.ref('rides').on('child_added', snap => {
+        const ride = snap.val();
+        // التأكد من أن الرحلة ما زالت تبحث عن سائق
+        if(ride.status === 'searching') {
+            const div = document.createElement('div');
+            div.id = "ride-" + snap.key;
+            div.style = "background:#1e293b; padding:15px; border-radius:15px; margin-top:10px; border: 1px solid #334155;";
+            
+            // تصحيح: استخدام الأسماء اللي الراكب بيبعتها (destination و riderName)
+            div.innerHTML = `
+                <b>📍 الوجهة: ${ride.destination || 'غير محددة'}</b><br>
+                <small>الراكب: ${ride.riderName || 'مجهول'}</small><br>
+                <input type="number" id="price-${snap.key}" style="width:80px; margin-top:10px;" placeholder="السعر">
+                <button class="btn" style="background:#10b981; color:white; padding:5px 10px; margin-top:5px;" 
+                    onclick="acceptRide('${snap.key}')">إرسال عرض</button>
+            `;
+            list.appendChild(div);
+        }
+    });
+}
+
+// الدالة اللي كانت ناقصة ومسببة الخطأ في الصورة
+function acceptRide(rideId) {
+    const priceInput = document.getElementById('price-' + rideId);
+    const offeredPrice = priceInput.value;
+
+    if(!offeredPrice) return alert("حط سعرك الأول!");
+
+    // إرسال العرض لقاعدة البيانات
+    rtdb.ref('offers/' + rideId + '/' + currentUid).set({
+        driverName: document.getElementById('name').value || "كابتن مجهول",
+        driverPhone: document.getElementById('phone').value || "000",
+        price: offeredPrice,
+        arrivalTime: "5", // وقت افتراضي
+        status: 'pending'
+    }).then(() => {
+        alert("تم إرسال عرضك للراكب بنجاح! استنى موافقته.");
+        document.getElementById('ride-' + rideId).style.opacity = "0.5";
+    }).catch(err => alert("خطأ: " + err.message));
+} </script>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #10b981; --text: #f8fafc; --blue: #3b82f6; --red: #ef4444; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
