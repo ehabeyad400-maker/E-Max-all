@@ -3,101 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | Driver Dashboard 🚕</title>
+    <title>E-Max | Captain Dashboard 🚕</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script> // ... (ضع هذا الجزء داخل الـ Script في ملف driver.html)
 
-function startRadar() {
-    const list = document.getElementById('rides-list');
-    // تنظيف القائمة قبل العرض
-    list.innerHTML = "";
-
-    rtdb.ref('rides').on('child_added', snap => {
-        const ride = snap.val();
-        // التأكد من أن الرحلة ما زالت تبحث عن سائق
-        if(ride.status === 'searching') {
-            const div = document.createElement('div');
-            div.id = "ride-" + snap.key;
-            div.style = "background:#1e293b; padding:15px; border-radius:15px; margin-top:10px; border: 1px solid #334155;";
-            
-            // تصحيح: استخدام الأسماء اللي الراكب بيبعتها (destination و riderName)
-            div.innerHTML = `
-                <b>📍 الوجهة: ${ride.destination || 'غير محددة'}</b><br>
-                <small>الراكب: ${ride.riderName || 'مجهول'}</small><br>
-                <input type="number" id="price-${snap.key}" style="width:80px; margin-top:10px;" placeholder="السعر">
-                <button class="btn" style="background:#10b981; color:white; padding:5px 10px; margin-top:5px;" 
-                    onclick="acceptRide('${snap.key}')">إرسال عرض</button>
-            `;
-            list.appendChild(div);
-        }
-    });
-}
-
-// الدالة اللي كانت ناقصة ومسببة الخطأ في الصورة
-function acceptRide(rideId) {
-    const priceInput = document.getElementById('price-' + rideId);
-    const offeredPrice = priceInput.value;
-
-    if(!offeredPrice) return alert("حط سعرك الأول!");
-
-    // إرسال العرض لقاعدة البيانات
-    rtdb.ref('offers/' + rideId + '/' + currentUid).set({
-        driverName: document.getElementById('name').value || "كابتن مجهول",
-        driverPhone: document.getElementById('phone').value || "000",
-        price: offeredPrice,
-        arrivalTime: "5", // وقت افتراضي
-        status: 'pending'
-    }).then(() => {
-        alert("تم إرسال عرضك للراكب بنجاح! استنى موافقته.");
-        document.getElementById('ride-' + rideId).style.opacity = "0.5";
-    }).catch(err => alert("خطأ: " + err.message));
-} </script>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #10b981; --text: #f8fafc; --blue: #3b82f6; --red: #ef4444; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; line-height: 1.6; }
         .container { max-width: 500px; margin: auto; }
-        .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .input-box { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 20px; }
+        
+        .input-box { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
         .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary { background: var(--blue); color: white; }
-        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; margin-bottom: 15px; }
+        .btn-accept { background: var(--accent); color: white; margin-top: 10px; }
+
+        .status-badge { padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .pending { background: #f59e0b; color: black; }
         .approved { background: var(--accent); color: white; }
+
+        .ride-request { background: #0f172a; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid #334155; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="auth-check">
-        <div id="reg-form" class="card">
-            <h2 style="text-align: center; color: var(--blue);">انضم لكباتن E-Max 🚕</h2>
-            <input type="text" id="name" class="input-box" placeholder="الاسم بالكامل">
-            <input type="tel" id="phone" class="input-box" placeholder="رقم الموبايل">
-            <input type="text" id="idCard" class="input-box" placeholder="رقم البطاقة">
-            <input type="text" id="license" class="input-box" placeholder="رقم الرخصة">
-            <input type="text" id="carInfo" class="input-box" placeholder="نوع السيارة (مثلاً: هيونداي النترا 2020)">
-            <button class="btn btn-primary" onclick="submitApplication()">إرسال الطلب للأدمن</button>
-        </div>
+    <div class="header">
+        <h2>E-Max كابتن 🚕</h2>
+        <div id="status-badge" class="status-badge pending">التحقق من الهوية</div>
+    </div>
 
-        <div id="wait-screen" class="card" style="display: none; text-align: center;">
-            <div class="status-badge pending">قيد المراجعة ⏳</div>
-            <h3>طلبك وصل يا بطل!</h3>
-            <p>الأدمن بيراجع بياناتك دلوقتي، أول ما يوافق الحساب هيفتح معاك تلقائياً.</p>
-        </div>
+    <div id="reg-screen" class="card" style="display: none;">
+        <h3>سجل بياناتك للانضمام 📋</h3>
+        <input type="text" id="d-name" class="input-box" placeholder="الاسم الرباعي">
+        <input type="tel" id="d-phone" class="input-box" placeholder="رقم الموبايل">
+        <input type="text" id="d-car" class="input-box" placeholder="نوع السيارة وموديلها">
+        <input type="text" id="d-idCard" class="input-box" placeholder="رقم البطاقة الشخصية">
+        <input type="text" id="d-license" class="input-box" placeholder="رقم الرخصة">
+        <button class="btn btn-primary" onclick="submitApplication()">إرسال الطلب للأدمن</button>
+    </div>
 
-        <div id="work-screen" class="card" style="display: none;">
-            <div class="status-badge approved">حساب مفعّل ✅</div>
-            <h3>رادار الرحلات 📡</h3>
+    <div id="wait-screen" class="card" style="display: none; text-align: center;">
+        <h1 style="font-size: 50px;">⏳</h1>
+        <h3>طلبك قيد المراجعة</h3>
+        <p>أهلاً بك يا بطل! الإدارة بتراجع بياناتك حالياً. أول ما يتم قبولك، الرادار هيفتح معاك فوراً.</p>
+    </div>
+
+    <div id="radar-screen" style="display: none;">
+        <div class="card">
+            <h3 style="margin-top:0;">رادار الرحلات المتاحة 📡</h3>
             <div id="rides-list">
-                <p style="color: #94a3b8;">في انتظار طلبات الركاب...</p>
+                <p style="color: #94a3b8; text-align: center;">جاري البحث عن طلبات قريبة...</p>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
         authDomain: "e-max-d7438.firebaseapp.com",
@@ -108,68 +75,110 @@ function acceptRide(rideId) {
     const auth = firebase.auth();
     const rtdb = firebase.database();
 
-    let currentUid;
+    let currentDriverUid;
+    let driverInfo = null;
 
+    // مراقبة حالة السائق
     auth.onAuthStateChanged(user => {
         if(user) {
-            currentUid = user.uid;
-            checkDriverStatus();
+            currentDriverUid = user.uid;
+            checkStatus();
         } else {
             auth.signInAnonymously();
         }
     });
 
+    // تسجيل البيانات
     function submitApplication() {
-        const d = {
-            name: document.getElementById('name').value,
-            phone: document.getElementById('phone').value,
-            idCard: document.getElementById('idCard').value,
-            license: document.getElementById('license').value,
-            car: document.getElementById('carInfo').value,
-            status: 'pending' // دي اللي أنت كأدمن هتغيرها
+        const name = document.getElementById('d-name').value;
+        const phone = document.getElementById('d-phone').value;
+        const car = document.getElementById('d-car').value;
+        const idCard = document.getElementById('d-idCard').value;
+        const license = document.getElementById('d-license').value;
+
+        if(!name || !phone || !idCard) return alert("من فضلك اكمل البيانات الأساسية");
+
+        const data = {
+            name: name,
+            phone: phone,
+            car: car,
+            idCard: idCard,
+            license: license,
+            status: 'pending' // أنت كأدمن تغيرها لـ approved في Firebase
         };
 
-        if(!d.name || !d.phone) return alert("اكمل البيانات");
-        
-        rtdb.ref('drivers/' + currentUid).set(d).then(() => {
-            alert("تم التقديم!");
-        });
+        rtdb.ref('drivers/' + currentDriverUid).set(data);
     }
 
-    function checkDriverStatus() {
-        rtdb.ref('drivers/' + currentUid).on('value', snap => {
+    // التحقق من حالة القبول
+    function checkStatus() {
+        rtdb.ref('drivers/' + currentDriverUid).on('value', snap => {
             const data = snap.val();
-            if(!data) return;
-
-            if(data.status === 'pending') {
-                document.getElementById('reg-form').style.display = 'none';
+            driverInfo = data;
+            
+            if(!data) {
+                document.getElementById('reg-screen').style.display = 'block';
+            } else if(data.status === 'pending') {
+                document.getElementById('reg-screen').style.display = 'none';
                 document.getElementById('wait-screen').style.display = 'block';
             } else if(data.status === 'approved') {
-                document.getElementById('reg-form').style.display = 'none';
+                document.getElementById('reg-screen').style.display = 'none';
                 document.getElementById('wait-screen').style.display = 'none';
-                document.getElementById('work-screen').style.display = 'block';
+                document.getElementById('radar-screen').style.display = 'block';
+                document.getElementById('status-badge').innerText = "حساب مفعل ✅";
+                document.getElementById('status-badge').className = "status-badge approved";
                 startRadar();
             }
         });
     }
 
+    // تشغيل الرادار واستقبال الطلبات
     function startRadar() {
-        // الربط مع قسم rides اللي في صورتك
-        rtdb.ref('rides').on('child_added', snap => {
-            const ride = snap.val();
-            if(ride.status === 'searching') {
-                const list = document.getElementById('rides-list');
-                const div = document.createElement('div');
-                div.style = "background:#0f172a; padding:15px; border-radius:15px; margin-top:10px;";
-                div.innerHTML = `
-                    <b>📍 الوجهة: ${ride.destination}</b><br>
-                    <small>الراكب: ${ride.riderName}</small><br>
-                    <button class="btn btn-primary" style="margin-top:10px; background:#10b981;" onclick="acceptRide('${snap.key}')">قبول الرحلة</button>
-                `;
-                list.appendChild(div);
+        const list = document.getElementById('rides-list');
+        
+        rtdb.ref('rides').on('value', snap => {
+            list.innerHTML = ""; // مسح القائمة وتحديثها
+            let hasRides = false;
+
+            snap.forEach(child => {
+                const ride = child.val();
+                if(ride.status === 'searching') {
+                    hasRides = true;
+                    const div = document.createElement('div');
+                    div.className = 'ride-request';
+                    div.innerHTML = `
+                        <b>📍 الوجهة: ${ride.destination}</b><br>
+                        <small>الراكب: ${ride.riderName}</small><br>
+                        <input type="number" id="price-${child.key}" class="input-box" placeholder="سعرك (ج.م)">
+                        <button class="btn btn-accept" onclick="sendOffer('${child.key}')">إرسال عرض سعر</button>
+                    `;
+                    list.appendChild(div);
+                }
+            });
+
+            if(!hasRides) {
+                list.innerHTML = '<p style="color: #94a3b8; text-align: center;">مفيش طلبات دلوقتي، خليك فاتح الصفحة..</p>';
             }
         });
     }
+
+    // إرسال عرض للراكب
+    function sendOffer(rideId) {
+        const price = document.getElementById('price-' + rideId).value;
+        if(!price) return alert("اكتب السعر الأول");
+
+        rtdb.ref('offers/' + rideId + '/' + currentDriverUid).set({
+            driverName: driverInfo.name,
+            driverPhone: driverInfo.phone,
+            carModel: driverInfo.car,
+            price: price,
+            arrivalTime: "5", // وقت افتراضي وصول السائق
+            status: 'pending'
+        }).then(() => {
+            alert("تم إرسال عرضك بنجاح!");
+        });
+    }
 </script>
+
 </body>
 </html>
