@@ -3,117 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | passenger 🚀</title>
-    
+    <title>E-Max | Passenger 🚀</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --green: #10b981; --red: #ef4444; --yellow: #f59e0b; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
-        
-        /* الشاشات */
-        .screen { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; text-align: center; }
-        .v-card { background: var(--card); width: 100%; max-width: 350px; padding: 20px; border-radius: 20px; margin: 10px 0; cursor: pointer; border: 2px solid transparent; transition: 0.3s; }
-        .v-card:hover { border-color: var(--accent); }
-        
-        #app-ui { display: none; flex-direction: column; height: 100vh; }
-        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-        #map { flex-grow: 1; z-index: 1; }
-
-        /* العناصر المنبثقة */
-        #settings-screen { position: fixed; left: -100%; top: 0; width: 80%; max-width: 300px; height: 100%; background: var(--card); z-index: 12000; transition: 0.4s; padding: 20px; box-shadow: 5px 0 20px rgba(0,0,0,0.5); }
-        #settings-screen.active { left: 0; }
-        #wallet-screen, #offers-screen, #active-ride-screen { position: fixed; inset: 0; background: var(--bg); z-index: 11000; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
-
-        /* أدوات التحكم */
-        .controls { position: fixed; bottom: 0; width: 100%; background: var(--card); padding: 20px; border-radius: 30px 30px 0 0; z-index: 1000; box-sizing: border-box; }
-        .input-box { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; outline: none; }
-        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.2s; }
-        .btn-main { background: var(--accent); color: white; }
-        .btn-sos { background: var(--red); color: white; width: 55px; height: 55px; border-radius: 50%; position: fixed; top: 85px; left: 20px; z-index: 500; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); cursor: pointer; }
-        
-        .timer-badge { background: var(--yellow); color: #000; padding: 10px; border-radius: 50px; font-weight: bold; margin: 15px 0; }
-        .offer-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 10px; border-right: 5px solid var(--accent); text-align: right; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --red: #ef4444; --green: #10b981; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; }
+        .screen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
+        #app-ui { display: none; height: 100vh; flex-direction: column; }
+        #map { flex-grow: 1; width: 100%; }
+        .controls { padding: 20px; background: var(--card); border-radius: 25px 25px 0 0; position: relative; }
+        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-sos { background: var(--red); color: white; width: 50px; height: 50px; border-radius: 50%; position: absolute; top: -60px; left: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+        .input-box { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        #wallet-screen, #offers-screen, #active-ride-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 2000; padding: 20px; overflow-y: auto; }
+        .offer-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 10px; border-right: 5px solid var(--accent); }
     </style>
 </head>
 <body>
 
     <div id="auth-screen" class="screen">
-        <div style="background: var(--card); padding: 30px; border-radius: 25px; width: 320px;">
-            <h1 style="color: var(--accent);">E-MAX</h1>
-            <button class="btn" onclick="loginWithGoogle()" style="background: #4285F4; margin-bottom: 15px;">🔵 الدخول بحساب Google</button>
-            <input type="email" id="email" class="input-box" placeholder="البريد الإلكتروني">
-            <input type="password" id="pass" class="input-box" placeholder="كلمة المرور">
-            <button class="btn" onclick="handleAuth()">دخول / تسجيل</button>
-        </div>
+        <h1 style="color:var(--accent); font-size: 40px;">E-MAX</h1>
+        <button class="btn" style="background:#4285F4; color:white; max-width: 300px;" onclick="loginWithGoogle()">🔵 الدخول بحساب Google</button>
     </div>
 
     <div id="vehicle-screen" class="screen" style="display: none;">
-        <h2 style="margin-bottom: 20px;">أهلاً بك في E-Max ✨</h2>
-        <div class="v-card" onclick="selectVehicle('عادية')">🚕 <b>عادية</b><br><small>رحلة اقتصادية</small></div>
-        <div class="v-card" onclick="selectVehicle('برو')">✨ <b>برو</b><br><small>سيارات فاخرة</small></div>
-        <div class="v-card" onclick="selectVehicle('موتوسيكل')">🏍️ <b>موتوسيكل</b><br><small>أسرع في الزحام</small></div>
-    </div>
-
-    <div id="settings-screen">
-        <h3>الملف الشخصي ⚙️</h3>
-        <input type="text" id="user-name" class="input-box" placeholder="اسمك">
-        <input type="tel" id="user-phone" class="input-box" placeholder="رقم موبايلك">
-        <button class="btn btn-main" onclick="saveProfile()">حفظ البيانات</button>
-        <button class="btn" style="background:none; color:var(--red);" onclick="toggleSettings()">إغلاق</button>
-    </div>
-
-    <div id="wallet-screen">
-        <div class="screen">
-            <h3>شحن الرصيد 💳</h3>
-            <p>حول لـ فودافون كاش:</p>
-            <div style="background:var(--card); padding:15px; border-radius:15px; margin-bottom:15px; cursor:pointer;" onclick="copyNum()">
-                <b id="v-num" style="color:var(--green); font-size:18px;">01019930581</b><br>
-                <small>(اضغط للنسخ)</small>
-            </div>
-            <input type="number" id="w-amt" class="input-box" placeholder="المبلغ">
-            <input type="text" id="w-phone" class="input-box" placeholder="رقمك اللي حولت منه">
-            <button class="btn btn-main" onclick="sendWalletRequest()">إرسال الطلب</button>
-            <button class="btn" style="background:none;" onclick="toggleWallet(false)">رجوع</button>
-        </div>
-    </div>
-
-    <div id="offers-screen">
-        <h2>عروض السائقين 🔍</h2>
-        <div id="offers-list" style="flex:1;"></div>
-        <button class="btn" style="background:var(--red); color:white;" onclick="cancelSearch()">إلغاء الطلب</button>
-    </div>
-
-    <div id="active-ride-screen">
-        <div style="background: var(--card); padding: 20px; border-radius: 0 0 30px 30px;">
-            <h3>السائق في الطريق 🚕</h3>
-            <div id="ride-timer" class="timer-badge">متبقي 00:00</div>
-        </div>
-        <div style="padding: 20px;">
-            <h2 id="view-driver-name">اسم السائق</h2>
-            <p id="view-car-model" style="color:var(--accent);">نوع العربية</p>
-            <b id="view-price" style="font-size: 24px; color:var(--green);">0 ج.م</b>
-            <br><br>
-            <a id="call-driver" href="#" class="btn btn-main" style="background:var(--green); text-decoration:none; display:block;">📞 اتصل بالسائق</a>
-            <button class="btn" style="background:var(--red); color:white; margin-top:10px;" onclick="cancelRide()">إلغاء الرحلة</button>
+        <h2>أهلاً بك.. اختر وسيلة التنقل ✨</h2>
+        <div style="width:100%; max-width:350px;">
+            <div class="btn" style="background:var(--card); margin:10px 0; padding:20px; text-align:center;" onclick="selectVehicle('عادية')">🚕 عادية</div>
+            <div class="btn" style="background:var(--card); margin:10px 0; padding:20px; text-align:center;" onclick="selectVehicle('برو')">✨ برو (سيارات حديثة)</div>
+            <div class="btn" style="background:var(--card); margin:10px 0; padding:20px; text-align:center;" onclick="selectVehicle('موتوسيكل')">🏍️ موتوسيكل</div>
         </div>
     </div>
 
     <div id="app-ui">
-        <header>
-            <div onclick="toggleSettings()" style="cursor:pointer; font-size: 20px;">⚙️</div>
-            <div onclick="toggleWallet(true)" style="background:var(--green); padding:5px 12px; border-radius:10px; cursor:pointer;">💳 <span id="balance">0</span> ج.م</div>
-            <div onclick="logout()" style="color:var(--red); cursor:pointer;">خروج</div>
-        </header>
+        <div style="padding:15px; display:flex; justify-content:space-between; background:var(--card); align-items:center;">
+            <div onclick="toggleWallet(true)" style="cursor:pointer; background:#0f172a; padding:5px 15px; border-radius:10px;">💳 <span id="balance">0</span> ج.م</div>
+            <div style="font-weight:bold; color:var(--accent);">E-MAX</div>
+            <div onclick="logout()" style="color:var(--red); font-size:12px;">خروج</div>
+        </div>
         <div id="map"></div>
-        <div class="btn-sos" onclick="sendSOS()">SOS</div>
         <div class="controls">
-            <input type="text" id="dest" class="input-box" placeholder="رايح فين؟">
-            <button class="btn btn-main" onclick="requestRide()">اطلب وشوف العروض ✅</button>
+            <div class="btn-sos" onclick="sendSOS()">SOS</div>
+            <input type="text" id="dest" class="input-box" placeholder="إلى أين تريد الذهاب؟">
+            <button class="btn" style="background:var(--accent); color:white;" onclick="requestRide()">اطلب وشوف العروض ✅</button>
+        </div>
+    </div>
+
+    <div id="wallet-screen">
+        <h3>محفظة E-Max 💳</h3>
+        <p style="background:var(--card); padding:15px; border-radius:10px;">رقم التحويل (فودافون كاش): <br><b style="color:var(--green)">010XXXXXXXX</b></p>
+        <input type="number" id="w-amt" class="input-box" placeholder="المبلغ">
+        <input type="text" id="w-phone" class="input-box" placeholder="رقمك اللي حولت منه">
+        <button class="btn" style="background:var(--green); color:white;" onclick="sendWalletRequest()">إرسال طلب إيداع</button>
+        <button class="btn" style="background:none;" onclick="toggleWallet(false)">إغلاق</button>
+    </div>
+
+    <div id="offers-screen">
+        <h2 style="text-align:center;">بحثاً عن أفضل العروض 📡</h2>
+        <div id="offers-list"></div>
+        <button class="btn" style="background:var(--red); color:white; margin-top:20px;" onclick="cancelRide()">إلغاء الطلب</button>
+    </div>
+
+    <div id="active-ride-screen">
+        <div style="background:var(--card); padding:25px; border-radius:25px; text-align:center;">
+            <h3 id="ride-status" style="color:var(--green)">السائق وافق وفي الطريق إليك!</h3>
+            <h1 id="act-driver-name">--</h1>
+            <p id="act-car">--</p>
+            <b id="act-price" style="font-size:30px; color:var(--green)">0 ج.م</b><br>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; margin:15px 0;">وقت الوصول المتوقع: <span id="act-time" style="color:var(--accent)">0</span> دقيقة</div>
+            <a id="call-btn" href="#" class="btn" style="background:var(--green); color:white; text-decoration:none; display:block;">📞 اتصل بالكابتن</a>
+            <button class="btn" style="background:var(--red); color:white; margin-top:15px;" onclick="cancelRide()">إلغاء الرحلة</button>
         </div>
     </div>
 
@@ -125,32 +88,22 @@
             projectId: "e-max-d7438",
         };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const rtdb = firebase.database();
+        const auth = firebase.auth();
 
-        let userUid, map, userMarker, currentRideId = null, selectedType = "";
+        let userUid, currentRideId, selectedType, map;
 
-        // حالة الدخول
         auth.onAuthStateChanged(user => {
             if(user) {
                 userUid = user.uid;
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('vehicle-screen').style.display = 'flex';
-                loadProfile();
-            } else {
-                document.getElementById('auth-screen').style.display = 'flex';
-                document.getElementById('vehicle-screen').style.display = 'none';
+                rtdb.ref('users/'+userUid+'/balance').on('value', s => document.getElementById('balance').innerText = s.val() || 0);
             }
         });
 
         function loginWithGoogle() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-        function handleAuth() {
-            const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-            if(!e || !p) return alert("اكمل البيانات");
-            auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
-        }
 
-        // اختيار المركبة والبدء
         function selectVehicle(type) {
             selectedType = type;
             document.getElementById('vehicle-screen').style.display = 'none';
@@ -160,83 +113,98 @@
 
         function initMap() {
             if(map) return;
-            map = L.map('map', {zoomControl: false}).setView([30.0444, 31.2357], 15);
+            map = L.map('map', {zoomControl: false}).setView([30.04, 31.23], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            
             navigator.geolocation.getCurrentPosition(p => {
                 const lat = p.coords.latitude, lng = p.coords.longitude;
                 map.setView([lat, lng], 16);
-                if(userMarker) map.removeLayer(userMarker);
-                userMarker = L.marker([lat, lng]).addTo(map).bindPopup("أنت هنا").openPopup();
-            }, () => alert("برجاء تفعيل الموقع"));
+                L.marker([lat, lng]).addTo(map).bindPopup("أنت هنا").openPopup();
+            });
         }
 
-        // طلب رحلة
         function requestRide() {
             const dest = document.getElementById('dest').value;
-            const name = document.getElementById('user-name').value;
-            const phone = document.getElementById('user-phone').value;
-
-            if(!name || !phone) return alert("سجل بياناتك في الإعدادات أولاً!");
-            if(!dest) return alert("حدد الوجهة!");
-
+            if(!dest) return alert("من فضلك حدد الوجهة");
+            
             const rideRef = rtdb.ref('rides/').push();
             currentRideId = rideRef.key;
-            rideRef.set({ 
-                riderId: userUid, riderName: name, riderPhone: phone,
-                destination: dest, type: selectedType, status: 'searching' 
+            rideRef.set({
+                riderId: userUid,
+                riderName: auth.currentUser.displayName || "عميل E-Max",
+                riderPhone: "01XXXXXXXXX", // يفضل عمل بروفايل للسؤال عنها
+                destination: dest,
+                type: selectedType,
+                status: 'searching'
             });
+
             document.getElementById('offers-screen').style.display = 'flex';
+            document.getElementById('offers-list').innerHTML = "<p style='text-align:center;'>جاري البحث عن كباتن قريبة...</p>";
             listenToOffers();
         }
 
         function listenToOffers() {
             rtdb.ref('offers/' + currentRideId).on('child_added', snap => {
                 const o = snap.val();
+                const list = document.getElementById('offers-list');
+                if(list.innerText.includes("جاري البحث")) list.innerHTML = "";
+                
                 const div = document.createElement('div');
                 div.className = 'offer-card';
                 div.innerHTML = `
-                    <b>🚗 ${o.driverName}</b> <span style="color:var(--green)">(${o.price} ج.م)</span><br>
-                    <small>السيارة: ${o.carModel}</small><br>
-                    <button class="btn btn-main" onclick="openActiveRide('${o.driverName}', '${o.price}', '${o.driverPhone}', '${o.carModel}', ${o.arrivalTime})">قبول العرض</button>
+                    <b>🚕 ${o.driverName}</b> - ${o.carModel}<br>
+                    <span style="color:var(--green)">السعر: ${o.price} ج.م</span> | <span style="color:var(--accent)">يصل خلال: ${o.arrivalTime} د</span><br>
+                    <button class="btn" style="background:var(--accent); color:white; margin-top:10px;" 
+                        onclick="confirmOffer('${snap.key}', '${o.driverName}', '${o.price}', '${o.driverPhone}', '${o.arrivalTime}', '${o.carModel}')">قبول العرض</button>
                 `;
-                document.getElementById('offers-list').appendChild(div);
+                list.appendChild(div);
             });
         }
 
-        function openActiveRide(name, price, phone, car, time) {
-            document.getElementById('offers-screen').style.display = 'none';
-            document.getElementById('active-ride-screen').style.display = 'flex';
-            document.getElementById('view-driver-name').innerText = name;
-            document.getElementById('view-price').innerText = price + " ج.م";
-            document.getElementById('view-car-model').innerText = "نوع السيارة: " + car;
-            document.getElementById('call-driver').href = "tel:" + phone;
-            
-            let sec = time * 60;
-            const timer = setInterval(() => {
-                let m = Math.floor(sec/60), s = sec%60;
-                document.getElementById('ride-timer').innerText = `متبقي ${m}:${s < 10 ? '0' : ''}${s} ويوصل`;
-                if(sec-- <= 0) { clearInterval(timer); document.getElementById('ride-timer').innerText = "وصل السائق!"; }
-            }, 1000);
+        function confirmOffer(dId, dName, price, phone, time, car) {
+            rtdb.ref('rides/' + currentRideId).update({
+                status: 'accepted',
+                driverId: dId,
+                finalPrice: price,
+                driverPhone: phone,
+                arrivalTime: time,
+                carInfo: car
+            }).then(() => {
+                document.getElementById('offers-screen').style.display = 'none';
+                document.getElementById('active-ride-screen').style.display = 'flex';
+                document.getElementById('act-driver-name').innerText = dName;
+                document.getElementById('act-price').innerText = price + " ج.م";
+                document.getElementById('act-time').innerText = time;
+                document.getElementById('act-car').innerText = car;
+                document.getElementById('call-btn').href = "tel:" + phone;
+            });
         }
 
-        // وظائف المحفظة والإعدادات
+        function cancelRide() {
+            if(!currentRideId) return;
+            if(confirm("هل تريد إلغاء الطلب؟")) {
+                rtdb.ref('rides/' + currentRideId).update({status: 'cancelled'}).then(() => {
+                    location.reload();
+                });
+            }
+        }
+
+        function sendWalletRequest() {
+            const amt = document.getElementById('w-amt').value;
+            const ph = document.getElementById('w-phone').value;
+            if(!amt || !ph) return alert("اكمل بيانات التحويل");
+            rtdb.ref('deposit_requests').push({
+                uid: userUid, amount: amt, phone: ph, status: 'pending', time: Date.now()
+            });
+            alert("تم إرسال الطلب، سيتم مراجعته وإضافة الرصيد");
+            toggleWallet(false);
+        }
+
+        function sendSOS() {
+            alert("⚠️ تم إرسال نداء استغاثة SOS لموقعك الحالي!");
+            rtdb.ref('sos').push({uid: userUid, time: Date.now(), status: 'emergency'});
+        }
+
         function toggleWallet(s) { document.getElementById('wallet-screen').style.display = s ? 'flex' : 'none'; }
-        function toggleSettings() { document.getElementById('settings-screen').classList.toggle('active'); }
-        function copyNum() { navigator.clipboard.writeText("010XXXXXXXX"); alert("تم نسخ الرقم"); }
-        function saveProfile() {
-            const n = document.getElementById('user-name').value, p = document.getElementById('user-phone').value;
-            rtdb.ref('users/'+userUid+'/profile').set({name:n, phone:p}).then(() => {alert("تم الحفظ"); toggleSettings();});
-        }
-        function loadProfile() {
-            rtdb.ref('users/'+userUid+'/profile').on('value', s => {
-                if(s.exists()){ document.getElementById('user-name').value = s.val().name; document.getElementById('user-phone').value = s.val().phone; }
-            });
-            rtdb.ref('users/'+userUid+'/balance').on('value', s => document.getElementById('balance').innerText = s.val() || 0);
-        }
-
-        function sendSOS() { alert("تم إرسال نداء استغاثة!"); rtdb.ref('sos').push({uid:userUid, time:Date.now()}); }
-        function cancelSearch() { rtdb.ref('rides/'+currentRideId).remove(); document.getElementById('offers-screen').style.display='none'; }
         function logout() { auth.signOut().then(() => location.reload()); }
     </script>
 </body>
