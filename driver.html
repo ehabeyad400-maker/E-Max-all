@@ -3,56 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | Captain Dashboard 🚕</title>
+    <title>E-Max | Captain</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #10b981; --text: #f8fafc; --blue: #3b82f6; --red: #ef4444; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
-        .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .input-box { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-primary { background: var(--blue); color: white; }
-        .ride-request { background: #0f172a; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid #334155; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        .card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .input-box { width: 100%; padding: 10px; margin: 6px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 14px; }
+        .btn { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .ride-card { background: #0f172a; padding: 12px; border-radius: 12px; margin-top: 10px; border: 1px solid #334155; }
+        .badge { padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; }
+        .cash { background: #f59e0b; color: #000; }
+        .wallet { background: var(--blue); color: white; }
     </style>
 </head>
 <body>
 
-    <h2 style="text-align:center;">E-Max Captain 🚕</h2>
-
-    <div id="reg-screen" class="card" style="display:none">
-        <h3>انضم إلينا ككابتن 📋</h3>
-        <input type="text" id="d-name" class="input-box" placeholder="الاسم الكامل">
-        <input type="tel" id="d-phone" class="input-box" placeholder="رقم الموبايل">
-        <input type="text" id="d-car" class="input-box" placeholder="نوع السيارة وموديلها">
-        <input type="text" id="d-id" class="input-box" placeholder="رقم البطاقة">
-        <button class="btn btn-primary" onclick="registerDriver()">إرسال بياناتي</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="font-size:18px; color:var(--blue); margin:0;">E-Max Captain 🚕</h2>
+        <div style="background:var(--card); padding:5px 12px; border-radius:8px; font-size:13px; border:1px solid var(--accent);">💰 محفظتي: <span id="d-balance">0</span> ج.م</div>
     </div>
 
-    <div id="wait-screen" class="card" style="display:none; text-align:center;">
-        <h1 style="font-size:50px;">⏳</h1>
-        <h3>قيد المراجعة</h3>
-        <p>الأدمن بيراجع حسابك دلوقتي.. أول ما تتقبل هتقدر تستلم رحلات.</p>
+    <div id="reg-screen" class="card" style="display:none">
+        <h3>بيانات الكابتن 📋</h3>
+        <input type="text" id="d-name" class="input-box" placeholder="الاسم">
+        <input type="tel" id="d-phone" class="input-box" placeholder="الموبايل">
+        <input type="text" id="d-car" class="input-box" placeholder="نوع السيارة">
+        <input type="text" id="d-id" class="input-box" placecholder="id card">
+        <button class="btn" style="background:var(--blue); color:white" onclick="register()">إرسال البيانات</button>
     </div>
 
     <div id="radar-screen" style="display:none">
         <div class="card">
-            <h3 style="margin-top:0;">رادار الطلبات القريبة 📡</h3>
+            <h3 style="margin:0 0 10px 0; font-size:15px;">الرادار 📡</h3>
             <div id="rides-list"></div>
         </div>
     </div>
 
-    <div id="active-ride-driver" style="display:none">
+    <div id="active-screen" style="display:none">
         <div class="card" style="border: 2px solid var(--accent)">
-            <h2 style="color:var(--accent)">رحلة مقبولة ✅</h2>
-            <hr style="border:0.5px solid #334155">
-            <p><b>👤 اسم الراكب:</b> <span id="view-r-name">--</span></p>
-            <p><b>🏁 الوجهة:</b> <span id="view-r-dest">--</span></p>
-            <p><b>💰 السعر:</b> <span id="view-r-price">0</span> ج.م</p>
-            <p><b>📞 تليفون الراكب:</b> <span id="view-r-phone">--</span></p>
-            <a id="call-rider-btn" href="#" class="btn" style="background:var(--accent); color:white; text-decoration:none; display:block; text-align:center;">📞 اتصل بالراكب الآن</a>
-            <button class="btn" style="margin-top:15px; background:var(--blue); color:white;" onclick="location.reload()">تم إنهاء الرحلة</button>
+            <h3 style="color:var(--accent); margin:0 0 10px 0;">رحلة جارية ✅</h3>
+            <p style="font-size:14px; margin:5px 0;"><b>👤 الراكب:</b> <span id="r-name"></span></p>
+            <p style="font-size:14px; margin:5px 0;"><b>🏁 الوجهة:</b> <span id="r-dest"></span></p>
+            <p style="font-size:14px; margin:5px 0;"><b>💳 الدفع:</b> <span id="r-pay"></span></p>
+            <p style="font-size:14px; margin:5px 0;"><b>💰 السعر:</b> <span id="r-price"></span> ج.م</p>
+            <a id="r-call" href="#" class="btn" style="background:var(--accent); color:white; text-decoration:none; display:block; text-align:center; margin-top:10px;">📞 اتصل بالراكب</a>
+            <button class="btn" style="background:none; color:var(--red); border:1px solid var(--red); margin-top:10px;" onclick="cancelByDriver()">إلغاء الرحلة</button>
+            <button class="btn" style="margin-top:15px; background:var(--blue); color:white;" onclick="finishRide()">إتمام الرحلة وتحصيل الحساب</button>
         </div>
     </div>
 
@@ -66,40 +65,29 @@
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
         const auth = firebase.auth();
-
-        let dUid, dData;
+        let dUid, dData, activeRideId, currentRideData;
 
         auth.onAuthStateChanged(user => {
-            if(user) {
-                dUid = user.uid;
-                checkStatus();
-            } else { auth.signInAnonymously(); }
+            if(user) { dUid = user.uid; checkStatus(); }
+            else { auth.signInAnonymously(); }
         });
 
-        function registerDriver() {
-            const data = {
-                name: document.getElementById('d-name').value,
-                phone: document.getElementById('d-phone').value,
-                car: document.getElementById('d-car').value,
-                id: document.getElementById('d-id').value,
-                status: 'pending'
-            };
-            if(!data.name || !data.phone) return alert("اكمل البيانات");
-            rtdb.ref('drivers/' + dUid).set(data);
+        function register() {
+            const name = document.getElementById('d-name').value;
+            const car = document.getElementById('d-car').value;
+            const phone = document.getElementById('d-phone').value;
+            if(!name || !phone) return alert("اكمل البيانات");
+            rtdb.ref('drivers/' + dUid).set({name, car, phone, balance: 0, status: 'approved'});
         }
 
         function checkStatus() {
             rtdb.ref('drivers/' + dUid).on('value', snap => {
-                const data = snap.val();
-                dData = data;
-                if(!data) document.getElementById('reg-screen').style.display = 'block';
-                else if(data.status === 'pending') {
-                    document.getElementById('reg-screen').style.display = 'none';
-                    document.getElementById('wait-screen').style.display = 'block';
-                } else if(data.status === 'approved') {
-                    document.getElementById('reg-screen').style.display = 'none';
-                    document.getElementById('wait-screen').style.display = 'none';
-                    document.getElementById('radar-screen').style.display = 'block';
+                dData = snap.val();
+                if(!dData) document.getElementById('reg-screen').style.display='block';
+                else {
+                    document.getElementById('d-balance').innerText = dData.balance || 0;
+                    document.getElementById('reg-screen').style.display='none';
+                    document.getElementById('radar-screen').style.display='block';
                     startRadar();
                 }
             });
@@ -112,17 +100,25 @@
                 snap.forEach(child => {
                     const ride = child.val();
                     if(ride.status === 'searching') {
+                        const payTag = ride.payMethod === 'wallet' ? '<span class="badge wallet">محفظة</span>' : '<span class="badge cash">كاش</span>';
                         const div = document.createElement('div');
-                        div.className = 'ride-request';
+                        div.className = 'ride-card';
+                        div.id = 'card-' + child.key;
                         div.innerHTML = `
-                            <b>🏁 الوجهة: ${ride.destination}</b><br>
-                            <small>الراكب: ${ride.riderName}</small><br>
-                            <input type="number" id="p-${child.key}" class="input-box" placeholder="سعرك">
-                            <input type="number" id="t-${child.key}" class="input-box" placeholder="وقت الوصول (دقائق)">
-                            <button class="btn" style="background:var(--blue); color:white;" onclick="sendOffer('${child.key}')">تقديم عرض</button>
+                            <div style="display:flex; justify-content:space-between;"><b>📍 لـ: ${ride.destination}</b> ${payTag}</div>
+                            <div style="display:flex; gap:5px; margin-top:8px;">
+                                <input type="number" id="p-${child.key}" class="input-box" style="margin:0; flex:1" placeholder="السعر">
+                                <input type="number" id="t-${child.key}" class="input-box" style="margin:0; flex:1" placeholder="وقت">
+                            </div>
+                            <div style="display:flex; gap:5px; margin-top:8px;">
+                                <button class="btn" style="background:var(--blue); color:white; flex:2" onclick="sendOffer('${child.key}')">إرسال</button>
+                                <button class="btn" style="background:var(--red); color:white; flex:1" onclick="document.getElementById('card-${child.key}').remove()">تجاهل</button>
+                            </div>
                         `;
                         list.appendChild(div);
                     } else if(ride.status === 'accepted' && ride.driverId === dUid) {
+                        activeRideId = child.key;
+                        currentRideData = ride;
                         showActiveRide(ride);
                     }
                 });
@@ -132,22 +128,40 @@
         function sendOffer(id) {
             const p = document.getElementById('p-'+id).value;
             const t = document.getElementById('t-'+id).value;
-            if(!p || !t) return alert("حدد السعر والوقت");
+            if(!p || !t) return alert("اكتب السعر والوقت");
             rtdb.ref('offers/'+id+'/'+dUid).set({
-                driverName: dData.name, driverPhone: dData.phone,
-                carModel: dData.car, price: p, arrivalTime: t
+                driverName: dData.name, carModel: dData.car, driverPhone: dData.phone, price: p, arrivalTime: t
             });
             alert("تم إرسال العرض!");
         }
 
+        function finishRide() {
+            const amount = parseInt(currentRideData.finalPrice);
+            if(currentRideData.payMethod === 'wallet') {
+                // تحصيل آلي من المحفظة
+                rtdb.ref('users/' + currentRideData.riderId + '/balance').transaction(b => (b || 0) - amount);
+                rtdb.ref('drivers/' + dUid + '/balance').transaction(b => (b || 0) + amount);
+                alert("تم استلام الحساب " + amount + " ج.م في محفظتك!");
+            } else {
+                alert("برجاء استلام " + amount + " ج.م كاش من الراكب.");
+            }
+            rtdb.ref('rides/' + activeRideId).update({status: 'completed'}).then(() => location.reload());
+        }
+
         function showActiveRide(ride) {
             document.getElementById('radar-screen').style.display = 'none';
-            document.getElementById('active-ride-driver').style.display = 'block';
-            document.getElementById('view-r-name').innerText = ride.riderName;
-            document.getElementById('view-r-dest').innerText = ride.destination;
-            document.getElementById('view-r-price').innerText = ride.finalPrice;
-            document.getElementById('view-r-phone').innerText = ride.riderPhone;
-            document.getElementById('call-rider-btn').href = "tel:" + ride.riderPhone;
+            document.getElementById('active-screen').style.display = 'block';
+            document.getElementById('r-name').innerText = ride.riderName;
+            document.getElementById('r-dest').innerText = ride.destination;
+            document.getElementById('r-price').innerText = ride.finalPrice;
+            document.getElementById('r-pay').innerText = (ride.payMethod === 'wallet' ? 'محفظة E-Max' : 'كاش للسائق');
+            document.getElementById('r-call').href = "tel:" + ride.riderPhone;
+        }
+
+        function cancelByDriver() {
+            if(confirm("إلغاء الرحلة؟")) {
+                rtdb.ref('rides/' + activeRideId).update({status: 'searching'}).then(() => location.reload());
+            }
         }
     </script>
 </body>
