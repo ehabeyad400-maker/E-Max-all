@@ -2,166 +2,137 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>E-Max | Captain</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #10b981; --text: #f8fafc; --blue: #3b82f6; --red: #ef4444; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
-        .card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .input-box { width: 100%; padding: 10px; margin: 6px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 14px; }
-        .btn { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
-        .ride-card { background: #0f172a; padding: 12px; border-radius: 12px; margin-top: 10px; border: 1px solid #334155; }
-        .badge { padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; }
-        .cash { background: #f59e0b; color: #000; }
-        .wallet { background: var(--blue); color: white; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #10b981; --text: #f8fafc; --blue: #3b82f6; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        #map { flex: 1; width: 100%; }
+        .header-ui { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 1000; background: var(--card); padding: 12px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        
+        .ride-card { position: fixed; bottom: 15px; left: 15px; right: 15px; z-index: 1000; background: var(--card); padding: 20px; border-radius: 20px; border: 2px solid var(--blue); }
+        .btn { border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; }
+
+        /* شات السائق */
+        #driver-chat { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: none; flex-direction: column; padding: 20px; }
+        #msgs-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin: 15px 0; }
+        .m { padding: 12px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .m.me { background: var(--blue); align-self: flex-start; }
+        .m.them { background: #334155; align-self: flex-end; }
     </style>
 </head>
 <body>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h2 style="font-size:18px; color:var(--blue); margin:0;">E-Max Captain 🚕</h2>
-        <div style="background:var(--card); padding:5px 12px; border-radius:8px; font-size:13px; border:1px solid var(--accent);">💰 محفظتي: <span id="d-balance">0</span> ج.م</div>
+    <div class="header-ui">
+        <b>كابتن E-Max 🚕</b>
+        <span>💰 <span id="d-balance">0</span> ج.م</span>
     </div>
 
-    <div id="reg-screen" class="card" style="display:none">
-        <h3>بيانات الكابتن 📋</h3>
-        <input type="text" id="d-name" class="input-box" placeholder="الاسم">
-        <input type="tel" id="d-phone" class="input-box" placeholder="الموبايل">
-        <input type="text" id="d-car" class="input-box" placeholder="نوع السيارة">
-        <input type="text" id="d-id" class="input-box" placecholder="id card">
-        <button class="btn" style="background:var(--blue); color:white" onclick="register()">إرسال البيانات</button>
+    <div id="map"></div>
+
+    <div id="radar-ui" style="display:none" class="ride-card">
+        <h4 id="req-dest" style="margin:0 0 10px 0;">📍 طلب رحلة جديد!</h4>
+        <button class="btn" style="background:var(--blue); color:white" onclick="acceptRide()">قبول الرحلة وتواصل</button>
     </div>
 
-    <div id="radar-screen" style="display:none">
-        <div class="card">
-            <h3 style="margin:0 0 10px 0; font-size:15px;">الرادار 📡</h3>
-            <div id="rides-list"></div>
+    <div id="active-ui" style="display:none" class="ride-card">
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <button class="btn" style="background:var(--accent); color:white; flex:1" onclick="toggleChat(true)">💬 شات</button>
+            <button class="btn" style="background:white; color:black; flex:1" onclick="finishRide()">إنهاء ✅</button>
         </div>
     </div>
 
-    <div id="active-screen" style="display:none">
-        <div class="card" style="border: 2px solid var(--accent)">
-            <h3 style="color:var(--accent); margin:0 0 10px 0;">رحلة جارية ✅</h3>
-            <p style="font-size:14px; margin:5px 0;"><b>👤 الراكب:</b> <span id="r-name"></span></p>
-            <p style="font-size:14px; margin:5px 0;"><b>🏁 الوجهة:</b> <span id="r-dest"></span></p>
-            <p style="font-size:14px; margin:5px 0;"><b>💳 الدفع:</b> <span id="r-pay"></span></p>
-            <p style="font-size:14px; margin:5px 0;"><b>💰 السعر:</b> <span id="r-price"></span> ج.م</p>
-            <a id="r-call" href="#" class="btn" style="background:var(--accent); color:white; text-decoration:none; display:block; text-align:center; margin-top:10px;">📞 اتصل بالراكب</a>
-            <button class="btn" style="background:none; color:var(--red); border:1px solid var(--red); margin-top:10px;" onclick="cancelByDriver()">إلغاء الرحلة</button>
-            <button class="btn" style="margin-top:15px; background:var(--blue); color:white;" onclick="finishRide()">إتمام الرحلة وتحصيل الحساب</button>
+    <div id="driver-chat">
+        <div style="display:flex; justify-content:space-between;"><b>محادثة الراكب</b> <span onclick="toggleChat(false)">إغلاق ×</span></div>
+        <div id="msgs-box"></div>
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="m-input" style="flex:1; padding:12px; border-radius:12px; border:none;" placeholder="اكتب للراكب...">
+            <button class="btn" style="width:70px; background:var(--blue); color:white;" onclick="sendMsg()">إرسال</button>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
-            authDomain: "e-max-d7438.firebaseapp.com",
-            databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
-            projectId: "e-max-d7438",
-        };
+        const firebaseConfig = { /* نفسها */ };
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
-        const auth = firebase.auth();
-        let dUid, dData, activeRideId, currentRideData;
+        let dUid, map, myMarker, riderMarker, activeRide;
 
-        auth.onAuthStateChanged(user => {
-            if(user) { dUid = user.uid; checkStatus(); }
-            else { auth.signInAnonymously(); }
+        firebase.auth().onAuthStateChanged(user => {
+            if(user) { dUid = user.uid; initMap(); listenToRides(); }
+            else { firebase.auth().signInAnonymously(); }
         });
 
-        function register() {
-            const name = document.getElementById('d-name').value;
-            const car = document.getElementById('d-car').value;
-            const phone = document.getElementById('d-phone').value;
-            if(!name || !phone) return alert("اكمل البيانات");
-            rtdb.ref('drivers/' + dUid).set({name, car, phone, balance: 0, status: 'approved'});
+        function initMap() {
+            map = L.map('map', {zoomControl: false}).setView([31.2, 29.9], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            
+            navigator.geolocation.watchPosition(p => {
+                const lat = p.coords.latitude, lng = p.coords.longitude;
+                if(!myMarker) myMarker = L.circleMarker([lat, lng], {radius: 10, color: '#3b82f6', fillOpacity: 1}).addTo(map);
+                else myMarker.setLatLng([lat, lng]);
+                map.setView([lat, lng]);
+                if(activeRide) rtdb.ref('rides/'+activeRide.id+'/driverLoc').set({lat, lng});
+            }, null, {enableHighAccuracy: true});
         }
 
-        function checkStatus() {
-            rtdb.ref('drivers/' + dUid).on('value', snap => {
-                dData = snap.val();
-                if(!dData) document.getElementById('reg-screen').style.display='block';
-                else {
-                    document.getElementById('d-balance').innerText = dData.balance || 0;
-                    document.getElementById('reg-screen').style.display='none';
-                    document.getElementById('radar-screen').style.display='block';
-                    startRadar();
-                }
-            });
-        }
-
-        function startRadar() {
+        function listenToRides() {
             rtdb.ref('rides').on('value', snap => {
-                const list = document.getElementById('rides-list');
-                list.innerHTML = "";
                 snap.forEach(child => {
-                    const ride = child.val();
-                    if(ride.status === 'searching') {
-                        const payTag = ride.payMethod === 'wallet' ? '<span class="badge wallet">محفظة</span>' : '<span class="badge cash">كاش</span>';
-                        const div = document.createElement('div');
-                        div.className = 'ride-card';
-                        div.id = 'card-' + child.key;
-                        div.innerHTML = `
-                            <div style="display:flex; justify-content:space-between;"><b>📍 لـ: ${ride.destination}</b> ${payTag}</div>
-                            <div style="display:flex; gap:5px; margin-top:8px;">
-                                <input type="number" id="p-${child.key}" class="input-box" style="margin:0; flex:1" placeholder="السعر">
-                                <input type="number" id="t-${child.key}" class="input-box" style="margin:0; flex:1" placeholder="وقت">
-                            </div>
-                            <div style="display:flex; gap:5px; margin-top:8px;">
-                                <button class="btn" style="background:var(--blue); color:white; flex:2" onclick="sendOffer('${child.key}')">إرسال</button>
-                                <button class="btn" style="background:var(--red); color:white; flex:1" onclick="document.getElementById('card-${child.key}').remove()">تجاهل</button>
-                            </div>
-                        `;
-                        list.appendChild(div);
-                    } else if(ride.status === 'accepted' && ride.driverId === dUid) {
-                        activeRideId = child.key;
-                        currentRideData = ride;
-                        showActiveRide(ride);
+                    const r = child.val();
+                    if(r.status === 'searching') {
+                        activeRide = {id: child.key, ...r};
+                        document.getElementById('req-dest').innerText = "📍 " + r.destination;
+                        document.getElementById('radar-ui').style.display = 'block';
+                    }
+                    if(r.status === 'accepted' && r.driverId === dUid) {
+                        activeRide = {id: child.key, ...r};
+                        document.getElementById('radar-ui').style.display = 'none';
+                        document.getElementById('active-ui').style.display = 'block';
+                        if(r.riderLoc) updateRiderMarker(r.riderLoc);
+                        listenToChat();
                     }
                 });
             });
         }
 
-        function sendOffer(id) {
-            const p = document.getElementById('p-'+id).value;
-            const t = document.getElementById('t-'+id).value;
-            if(!p || !t) return alert("اكتب السعر والوقت");
-            rtdb.ref('offers/'+id+'/'+dUid).set({
-                driverName: dData.name, carModel: dData.car, driverPhone: dData.phone, price: p, arrivalTime: t
-            });
-            alert("تم إرسال العرض!");
+        function updateRiderMarker(loc) {
+            if(!riderMarker) riderMarker = L.marker([loc.lat, loc.lng]).addTo(map).bindPopup("الراكب هنا").openPopup();
+            else riderMarker.setLatLng([loc.lat, loc.lng]);
+        }
+
+        function acceptRide() {
+            rtdb.ref('rides/'+activeRide.id).update({status: 'accepted', driverId: dUid});
         }
 
         function finishRide() {
-            const amount = parseInt(currentRideData.finalPrice);
-            if(currentRideData.payMethod === 'wallet') {
-                // تحصيل آلي من المحفظة
-                rtdb.ref('users/' + currentRideData.riderId + '/balance').transaction(b => (b || 0) - amount);
-                rtdb.ref('drivers/' + dUid + '/balance').transaction(b => (b || 0) + amount);
-                alert("تم استلام الحساب " + amount + " ج.م في محفظتك!");
-            } else {
-                alert("برجاء استلام " + amount + " ج.م كاش من الراكب.");
-            }
-            rtdb.ref('rides/' + activeRideId).update({status: 'completed'}).then(() => location.reload());
+            rtdb.ref('rides/'+activeRide.id).update({status: 'completed'}).then(() => location.reload());
         }
 
-        function showActiveRide(ride) {
-            document.getElementById('radar-screen').style.display = 'none';
-            document.getElementById('active-screen').style.display = 'block';
-            document.getElementById('r-name').innerText = ride.riderName;
-            document.getElementById('r-dest').innerText = ride.destination;
-            document.getElementById('r-price').innerText = ride.finalPrice;
-            document.getElementById('r-pay').innerText = (ride.payMethod === 'wallet' ? 'محفظة E-Max' : 'كاش للسائق');
-            document.getElementById('r-call').href = "tel:" + ride.riderPhone;
+        // --- شات السائق ---
+        function toggleChat(s) { document.getElementById('driver-chat').style.display = s ? 'flex' : 'none'; }
+        function sendMsg() {
+            const t = document.getElementById('m-input').value;
+            if(!t) return;
+            rtdb.ref('chats/'+activeRide.id).push({ sender: 'driver', text: t, time: Date.now() });
+            document.getElementById('m-input').value = "";
         }
-
-        function cancelByDriver() {
-            if(confirm("إلغاء الرحلة؟")) {
-                rtdb.ref('rides/' + activeRideId).update({status: 'searching'}).then(() => location.reload());
-            }
+        function listenToChat() {
+            rtdb.ref('chats/'+activeRide.id).off();
+            rtdb.ref('chats/'+activeRide.id).on('child_added', snap => {
+                const m = snap.val();
+                const div = document.createElement('div');
+                div.className = m.sender === 'driver' ? 'm me' : 'm them';
+                div.innerText = m.text;
+                document.getElementById('msgs-box').appendChild(div);
+                document.getElementById('msgs-box').scrollTop = document.getElementById('msgs-box').scrollHeight;
+            });
         }
     </script>
 </body>
