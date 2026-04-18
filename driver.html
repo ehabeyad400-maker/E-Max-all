@@ -3,76 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-Max | Captain</title>
+    <title>E-Max | Captain Pro</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #10b981; --text: #f8fafc; --blue: #3b82f6; }
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        #map { flex: 1; width: 100%; }
-        .header-ui { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 1000; background: var(--card); padding: 12px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        
-        .ride-card { position: fixed; bottom: 15px; left: 15px; right: 15px; z-index: 1000; background: var(--card); padding: 20px; border-radius: 20px; border: 2px solid var(--blue); }
-        .btn { border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; }
 
-        /* شات السائق */
-        #driver-chat { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: none; flex-direction: column; padding: 20px; }
-        #msgs-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin: 15px 0; }
-        .m { padding: 12px; border-radius: 15px; max-width: 80%; font-size: 14px; }
-        .m.me { background: var(--blue); align-self: flex-start; }
-        .m.them { background: #334155; align-self: flex-end; }
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #10b981; --text: #f8fafc; --blue: #3b82f6; --red: #ef4444; --gold: #fbbf24; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        
+        body { margin: 0; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
+        
+        /* شاشات الحماية (التسجيل، الانتظار، المديونية) */
+        .overlay-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; overflow-y: auto; }
+        .card { background: var(--card); padding: 25px; border-radius: 20px; width: 100%; max-width: 450px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        
+        .input-box { width: 100%; padding: 12px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; }
+        .btn { border: none; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-blue { background: var(--blue); color: white; }
+        .btn-green { background: var(--accent); color: white; }
+
+        /* واجهة التطبيق الأساسية */
+        #main-app { display: none; height: 100vh; flex-direction: column; }
+        header { padding: 12px 15px; background: var(--card); display: flex; justify-content: space-between; align-items: center; z-index: 100; border-bottom: 1px solid #334155; }
+        #map { flex: 1; width: 100%; z-index: 1; }
+        
+        .panel { position: fixed; bottom: 20px; left: 15px; right: 15px; z-index: 100; background: var(--card); padding: 18px; border-radius: 22px; border: 2px solid var(--blue); }
+        .badge { background: #0f172a; padding: 6px 12px; border-radius: 10px; font-size: 13px; border: 1px solid #334155; }
+
+        /* نظام الشات */
+        #chat-ui { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: none; flex-direction: column; padding: 20px; }
+        #messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px 0; }
+        .msg { padding: 12px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .msg.me { background: var(--blue); align-self: flex-start; }
+        .msg.them { background: #334155; align-self: flex-end; }
     </style>
 </head>
 <body>
 
-    <div class="header-ui">
-        <b>كابتن E-Max 🚕</b>
-        <span>💰 <span id="d-balance">0</span> ج.م</span>
-    </div>
-
-    <div id="map"></div>
-
-    <div id="radar-ui" style="display:none" class="ride-card">
-        <h4 id="req-dest" style="margin:0 0 10px 0;">📍 طلب رحلة جديد!</h4>
-        <button class="btn" style="background:var(--blue); color:white" onclick="acceptRide()">قبول الرحلة وتواصل</button>
-    </div>
-
-    <div id="active-ui" style="display:none" class="ride-card">
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <button class="btn" style="background:var(--accent); color:white; flex:1" onclick="toggleChat(true)">💬 شات</button>
-            <button class="btn" style="background:white; color:black; flex:1" onclick="finishRide()">إنهاء ✅</button>
+    <div id="reg-screen" class="overlay-screen">
+        <div class="card">
+            <h2 style="color:var(--blue)">انضم لكباتن E-MAX</h2>
+            <p style="color:#94a3b8; font-size:13px;">يرجى إرسال بياناتك وصور المستندات للتفعيل</p>
+            <input type="text" id="reg-name" class="input-box" placeholder="الاسم بالكامل">
+            <input type="tel" id="reg-phone" class="input-box" placeholder="رقم الهاتف (فودافون كاش)">
+            <input type="text" id="reg-docs" class="input-box" placeholder="روابط (البطاقة + الرخصة + السيارة)">
+            <button class="btn btn-blue" onclick="register()">تقديم الطلب</button>
         </div>
     </div>
 
-    <div id="driver-chat">
-        <div style="display:flex; justify-content:space-between;"><b>محادثة الراكب</b> <span onclick="toggleChat(false)">إغلاق ×</span></div>
-        <div id="msgs-box"></div>
-        <div style="display:flex; gap:8px;">
-            <input type="text" id="m-input" style="flex:1; padding:12px; border-radius:12px; border:none;" placeholder="اكتب للراكب...">
-            <button class="btn" style="width:70px; background:var(--blue); color:white;" onclick="sendMsg()">إرسال</button>
+    <div id="pending-screen" class="overlay-screen">
+        <div style="font-size:60px; margin-bottom:20px;">⏳</div>
+        <h2>طلبك قيد المراجعة</h2>
+        <p style="color:#94a3b8; max-width:300px;">إياد يراجع بياناتك الآن. سيتم تفعيل حسابك بمجرد التأكد من صحة الأوراق.</p>
+        <button class="btn" style="background:none; color:var(--red)" onclick="logout()">خروج</button>
+    </div>
+
+    <div id="debt-screen" class="overlay-screen">
+        <div class="card">
+            <h2 style="color:var(--red)">تنبيه: سداد العمولة 🛑</h2>
+            <p>لقد أتممت 5 رحلات بنجاح. يرجى تحويل عمولة الشركة (10%) للمتابعة.</p>
+            <div style="background:#0f172a; padding:15px; border-radius:15px; margin:15px 0;">
+                إجمالي دخلك: <span id="debt-total">0</span> ج.م<br>
+                المبلغ المطلوب: <b style="color:var(--gold)" id="debt-amt">0</b> ج.م
+            </div>
+            <p style="font-size:12px">حول المبلغ لفودافون كاش: <b>010XXXXXXXX</b></p>
+            <input type="text" id="pay-ref" class="input-box" placeholder="رقم العملية أو صورة التحويل">
+            <button class="btn btn-green" onclick="submitCommission()">تأكيد التحويل</button>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <header>
+            <div class="badge" onclick="requestWithdraw()">💰 <span id="balance">0</span> ج.م</div>
+            <div style="font-weight:900; color:var(--blue);">E-MAX CAPTAIN</div>
+            <div class="badge">🚕 <span id="trip-count">0</span>/5</div>
+        </header>
+
+        <div id="map"></div>
+
+        <div class="panel">
+            <h4 id="status-msg" style="margin:0 0 10px 0;">📡 في انتظار رحلات جديدة...</h4>
+            <div id="active-ride-ui" style="display:none">
+                <div style="font-size:13px; color:#94a3b8; margin-bottom:10px;" id="ride-details"></div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-blue" style="flex:1" onclick="toggleChat(true)">💬 شات</button>
+                    <button class="btn btn-green" style="flex:1" onclick="finishTrip()">إنهاء الرحلة ✅</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-ui">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b>المحادثة مع الراكب</b>
+            <span onclick="toggleChat(false)" style="color:var(--red); font-weight:bold; cursor:pointer;">إغلاق ×</span>
+        </div>
+        <div id="messages"></div>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="اكتب رسالة...">
+            <button class="btn btn-blue" style="width:70px; margin:0" onclick="sendChat()">إرسال</button>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = { /* نفسها */ };
+        // ⚙️ Firebase Config (استخدم بياناتك هنا)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
+            authDomain: "e-max-d7438.firebaseapp.com",
+            databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
+            projectId: "e-max-d7438",
+        };
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
-        let dUid, map, myMarker, riderMarker, activeRide;
+        const auth = firebase.auth();
 
-        firebase.auth().onAuthStateChanged(user => {
-            if(user) { dUid = user.uid; initMap(); listenToRides(); }
-            else { firebase.auth().signInAnonymously(); }
+        let dUid, map, myMarker, riderMarker, activeRide, driverData;
+
+        auth.onAuthStateChanged(user => {
+            if(user) { dUid = user.uid; syncDriverStatus(); }
+            else { auth.signInAnonymously(); }
         });
 
+        // 🛡️ فحص حالة السائق (تسجيل، انتظار، مديونية، مقبول)
+        function syncDriverStatus() {
+            rtdb.ref('drivers/' + dUid).on('value', snap => {
+                driverData = snap.val();
+                if(!driverData) { showScreen('reg-screen'); }
+                else if(driverData.status === 'pending') { showScreen('pending-screen'); }
+                else if(driverData.status === 'debt_block') { 
+                    showScreen('debt-screen');
+                    document.getElementById('debt-total').innerText = driverData.sessionEarnings || 0;
+                    document.getElementById('debt-amt').innerText = ((driverData.sessionEarnings || 0) * 0.10).toFixed(2);
+                }
+                else if(driverData.status === 'approved') {
+                    showScreen('main-app');
+                    document.getElementById('balance').innerText = driverData.balance || 0;
+                    document.getElementById('trip-count').innerText = driverData.tripsToday || 0;
+                    initMap();
+                    listenToRides();
+                }
+            });
+        }
+
+        function register() {
+            const name = document.getElementById('reg-name').value;
+            const phone = document.getElementById('reg-phone').value;
+            const docs = document.getElementById('reg-docs').value;
+            if(!name || !phone) return alert("يرجى ملء البيانات الأساسية");
+            rtdb.ref('drivers/'+dUid).set({
+                name, phone, documents: docs, status: 'pending',
+                balance: 0, tripsToday: 0, sessionEarnings: 0
+            });
+        }
+
+        // 🚕 إدارة الرحلات والتحصيل المالي
+        async function finishTrip() {
+            const price = parseInt(activeRide.finalPrice || 0);
+            const newBalance = (driverData.balance || 0) + price;
+            const newEarnings = (driverData.sessionEarnings || 0) + price;
+            const newTrips = (driverData.tripsToday || 0) + 1;
+
+            let updates = { 'balance': newBalance, 'sessionEarnings': newEarnings, 'tripsToday': newTrips };
+            
+            // قفل الحساب لو كمل 5 رحلات
+            if(newTrips >= 5) { updates['status'] = 'debt_block'; }
+
+            await rtdb.ref('drivers/'+dUid).update(updates);
+            await rtdb.ref('rides/'+activeRide.id).update({status: 'completed'});
+
+            if(activeRide.payMethod === 'wallet') {
+                const rRef = rtdb.ref('users/'+activeRide.riderId+'/balance');
+                const rSnap = await rRef.once('value');
+                rRef.set((rSnap.val() || 0) - price);
+                alert("تم تحصيل " + price + " ج.م من محفظة الراكب");
+            } else {
+                alert("برجاء تحصيل " + price + " ج.م كاش");
+            }
+            location.reload();
+        }
+
+        function submitCommission() {
+            const ref = document.getElementById('pay-ref').value;
+            if(!ref) return alert("ادخل تفاصيل التحويل");
+            rtdb.ref('commission_requests').push({
+                dUid, name: driverData.name, amount: (driverData.sessionEarnings * 0.10), ref, time: Date.now()
+            });
+            alert("تم إرسال الطلب، سيقوم إياد بمراجعته وفتح حسابك.");
+        }
+
+        function requestWithdraw() {
+            const amt = prompt("ادخل المبلغ المراد سحبه (متاح: " + driverData.balance + "):");
+            if(amt && amt <= driverData.balance) {
+                rtdb.ref('withdraw_requests').push({ dUid, name: driverData.name, amount: amt, status: 'pending' });
+                alert("تم إرسال طلب السحب بنجاح");
+            }
+        }
+
+        // 📍 الخريطة وتتبع الـ GPS
         function initMap() {
+            if(map) return;
             map = L.map('map', {zoomControl: false}).setView([31.2, 29.9], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            
             navigator.geolocation.watchPosition(p => {
                 const lat = p.coords.latitude, lng = p.coords.longitude;
                 if(!myMarker) myMarker = L.circleMarker([lat, lng], {radius: 10, color: '#3b82f6', fillOpacity: 1}).addTo(map);
@@ -86,54 +223,51 @@
             rtdb.ref('rides').on('value', snap => {
                 snap.forEach(child => {
                     const r = child.val();
-                    if(r.status === 'searching') {
-                        activeRide = {id: child.key, ...r};
-                        document.getElementById('req-dest').innerText = "📍 " + r.destination;
-                        document.getElementById('radar-ui').style.display = 'block';
+                    if(r.status === 'searching' && !activeRide) {
+                        if(confirm("رحلة جديدة لـ: " + r.destination)) {
+                            const p = prompt("اكتب السعر المناسب لهذه الرحلة:");
+                            if(p) rtdb.ref('rides/'+child.key).update({status: 'accepted', driverId: dUid, finalPrice: p});
+                        }
                     }
                     if(r.status === 'accepted' && r.driverId === dUid) {
                         activeRide = {id: child.key, ...r};
-                        document.getElementById('radar-ui').style.display = 'none';
-                        document.getElementById('active-ui').style.display = 'block';
-                        if(r.riderLoc) updateRiderMarker(r.riderLoc);
-                        listenToChat();
+                        document.getElementById('status-msg').innerText = "متجه لـ: " + r.destination;
+                        document.getElementById('ride-details').innerText = "السعر: " + r.finalPrice + " ج.م | الدفع: " + (r.payMethod==='wallet'?'محفظة':'كاش');
+                        document.getElementById('active-ride-ui').style.display = 'block';
+                        if(r.riderLoc) {
+                            if(!riderMarker) riderMarker = L.marker([r.riderLoc.lat, r.riderLoc.lng]).addTo(map).bindPopup("الراكب هنا").openPopup();
+                            else riderMarker.setLatLng([r.riderLoc.lat, r.riderLoc.lng]);
+                        }
+                        listenChat();
                     }
                 });
             });
         }
 
-        function updateRiderMarker(loc) {
-            if(!riderMarker) riderMarker = L.marker([loc.lat, loc.lng]).addTo(map).bindPopup("الراكب هنا").openPopup();
-            else riderMarker.setLatLng([loc.lat, loc.lng]);
+        // 💬 نظام الشات
+        function toggleChat(s) { document.getElementById('chat-ui').style.display = s ? 'flex' : 'none'; }
+        function sendChat() {
+            const t = document.getElementById('chat-input').value;
+            if(t) rtdb.ref('chats/'+activeRide.id).push({ sender: 'driver', text: t });
+            document.getElementById('chat-input').value = "";
         }
-
-        function acceptRide() {
-            rtdb.ref('rides/'+activeRide.id).update({status: 'accepted', driverId: dUid});
-        }
-
-        function finishRide() {
-            rtdb.ref('rides/'+activeRide.id).update({status: 'completed'}).then(() => location.reload());
-        }
-
-        // --- شات السائق ---
-        function toggleChat(s) { document.getElementById('driver-chat').style.display = s ? 'flex' : 'none'; }
-        function sendMsg() {
-            const t = document.getElementById('m-input').value;
-            if(!t) return;
-            rtdb.ref('chats/'+activeRide.id).push({ sender: 'driver', text: t, time: Date.now() });
-            document.getElementById('m-input').value = "";
-        }
-        function listenToChat() {
+        function listenChat() {
             rtdb.ref('chats/'+activeRide.id).off();
             rtdb.ref('chats/'+activeRide.id).on('child_added', snap => {
                 const m = snap.val();
                 const div = document.createElement('div');
-                div.className = m.sender === 'driver' ? 'm me' : 'm them';
+                div.className = m.sender === 'driver' ? 'msg me' : 'msg them';
                 div.innerText = m.text;
-                document.getElementById('msgs-box').appendChild(div);
-                document.getElementById('msgs-box').scrollTop = document.getElementById('msgs-box').scrollHeight;
+                document.getElementById('messages').appendChild(div);
+                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
             });
         }
+
+        function showScreen(id) {
+            ['reg-screen', 'pending-screen', 'debt-screen', 'main-app'].forEach(s => document.getElementById(s).style.display = (s===id?'flex':'none'));
+            if(id==='main-app') document.getElementById(id).style.display = 'flex';
+        }
+        function logout() { auth.signOut().then(()=>location.reload()); }
     </script>
 </body>
 </html>
