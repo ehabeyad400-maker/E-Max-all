@@ -2,153 +2,135 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>E-Max | المركز الرئيسي للإدارة 👑</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Max | Admin Panel</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --success: #10b981; --text: #f1f5f9; }
+        :root { --bg: #0f172a; --card: #1e293b; --blue: #3b82f6; --green: #10b981; --red: #ef4444; --text: #f8fafc; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        
-        /* شاشة الدخول */
-        #login-gate { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 10000; }
-        .login-box { background: var(--card); padding: 40px; border-radius: 24px; text-align: center; width: 320px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        
-        /* المحتوى الرئيسي */
-        #admin-content { display: none; max-width: 1200px; margin: auto; }
-        .dashboard-header { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: var(--card); padding: 20px; border-radius: 16px; border-bottom: 4px solid var(--accent); text-align: center; }
-        .stat-card h2 { font-size: 28px; margin: 10px 0; color: var(--accent); }
-
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 800px) { .grid-container { grid-template-columns: 1fr; } }
-
-        .section { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
-        h3 { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-top: 0; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { text-align: right; padding: 12px; border-bottom: 1px solid #334155; }
-        th { color: #94a3b8; }
-        
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
-        .badge-pending { background: #f59e0b; color: #000; }
-        .badge-verified { background: var(--success); color: #fff; }
-        
-        input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; }
-        .btn-main { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; cursor: pointer; font-weight: bold; }
-        .btn-verify { background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+        .section { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #334155; }
+        h2 { color: var(--blue); border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .item-card { background: #0f172a; padding: 15px; border-radius: 12px; margin-top: 10px; border-right: 5px solid var(--blue); display: flex; justify-content: space-between; align-items: center; }
+        .btn { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; margin-right: 5px; }
+        .btn-green { background: var(--green); color: white; }
+        .btn-red { background: var(--red); color: white; }
+        .badge { font-size: 12px; background: #334155; padding: 4px 8px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="login-gate">
-        <div class="login-box">
-            <h1 style="margin-top:0">E-Max <span style="color:var(--accent)">Admin</span></h1>
-            <input type="text" id="user" placeholder="اسم المستخدم">
-            <input type="password" id="pass" placeholder="كلمة المرور">
-            <button class="btn-main" onclick="authenticate()">دخول النظام</button>
-            <p id="err" style="color:#ef4444; display:none; margin-top:15px;">خطأ في البيانات!</p>
-        </div>
+    <h1>لوحة تحكم E-MAX 👑</h1>
+
+    <div class="section">
+        <h2>سائقين بانتظار التفعيل 🚕</h2>
+        <div id="pending-drivers"></div>
     </div>
 
-    <div id="admin-content">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h1>لوحة القيادة المركزية 🚀</h1>
-            <div id="live-indicator" style="color:var(--success); font-size:14px;">● متصل بالخادم لايف</div>
-        </div>
+    <div class="section">
+        <h2>طلبات شحن رصيد (ركاب) 💰</h2>
+        <div id="deposit-requests"></div>
+    </div>
 
-        <div class="dashboard-header">
-            <div class="stat-card"><span>إجمالي الركاب</span><h2 id="p-count">0</h2></div>
-            <div class="stat-card"><span>السائقين الموثقين</span><h2 id="d-count">0</h2></div>
-            <div class="stat-card"><span>رحلات اليوم</span><h2 id="t-count">0</h2></div>
-            <div class="stat-card"><span>صافي أرباحك</span><h2 id="revenue">0</h2></div>
-        </div>
+    <div class="section">
+        <h2>طلبات سحب أرباح (سائقين) 🏧</h2>
+        <div id="withdraw-requests"></div>
+    </div>
 
-        <div class="grid-container">
-            <div class="section">
-                <h3>🚕 إدارة السائقين</h3>
-                <div style="max-height: 400px; overflow-y: auto;">
-                    <table>
-                        <thead><tr><th>السائق</th><th>السيارة</th><th>الحالة</th><th>الإجراء</th></tr></thead>
-                        <tbody id="drivers-table"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="section">
-                <h3>👤 قاعدة بيانات الركاب</h3>
-                <div style="max-height: 400px; overflow-y: auto;">
-                    <table>
-                        <thead><tr><th>الاسم</th><th>المحفظة</th><th>آخر نشاط</th></tr></thead>
-                        <tbody id="passengers-table"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="section" style="margin-top:20px;">
-            <h3>🌐 نشاط النظام الآن (Active Sessions)</h3>
-            <div id="live-users" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
-        </div>
+    <div class="section">
+        <h2>تحصيلات العمولة (10%) 📈</h2>
+        <div id="commission-list"></div>
     </div>
 
     <script>
-        const ADMIN_USER = "eyad_admin";
-        const ADMIN_PASS = "emax2026";
+        const firebaseConfig = {
+            apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
+            authDomain: "e-max-d7438.firebaseapp.com",
+            databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
+            projectId: "e-max-d7438",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const rtdb = firebase.database();
 
-        function authenticate() {
-            if(document.getElementById('user').value === ADMIN_USER && document.getElementById('pass').value === ADMIN_PASS) {
-                document.getElementById('login-gate').style.display = 'none';
-                document.getElementById('admin-content').style.display = 'block';
-                initFirebase();
-            } else { document.getElementById('err').style.display = 'block'; }
+        // 1. جلب السائقين الجدد
+        rtdb.ref('drivers').on('value', snap => {
+            const list = document.getElementById('pending-drivers');
+            list.innerHTML = "";
+            snap.forEach(child => {
+                const d = child.val();
+                if(d.status === 'pending') {
+                    list.innerHTML += `
+                        <div class="item-card">
+                            <div>
+                                <b>${d.name}</b><br>
+                                <small>${d.phone}</small><br>
+                                <a href="${d.documents}" target="_blank" style="color:var(--blue)">فتح المستندات 📄</a>
+                            </div>
+                            <button class="btn btn-green" onclick="approveDriver('${child.key}')">تفعيل</button>
+                        </div>`;
+                }
+            });
+        });
+
+        function approveDriver(id) {
+            rtdb.ref('drivers/' + id).update({ status: 'approved' });
+            alert("تم تفعيل السائق بنجاح!");
         }
 
-        function initFirebase() {
-            const config = { 
-                apiKey: "AIzaSyDxQNmQIE01X8fme4zZpbNNZ-Zd5GHd5is", 
-                databaseURL: "https://e-max-58d5f-default-rtdb.firebaseio.com" 
-            };
-            firebase.initializeApp(config);
-            const db = firebase.database();
-
-            // 1. تحديث السائقين
-            db.ref('drivers').on('value', s => {
-                let dTable = document.getElementById('drivers-table');
-                let count = 0; dTable.innerHTML = "";
-                s.forEach(c => {
-                    const d = c.val(); if(d.status==='verified') count++;
-                    const badge = d.status === 'verified' ? '<span class="badge badge-verified">Verified</span>' : '<span class="badge badge-pending">Pending</span>';
-                    const action = d.status === 'pending' ? `<button class="btn-verify" onclick="verify('${c.key}')">تفعيل</button>` : '✅';
-                    dTable.innerHTML += `<tr><td>${d.name}<br><small>${d.phone}</small></td><td>${d.car}</td><td>${badge}</td><td>${action}</td></tr>`;
-                });
-                document.getElementById('d-count').innerText = count;
+        // 2. جلب طلبات الشحن
+        rtdb.ref('deposits').on('value', snap => {
+            const list = document.getElementById('deposit-requests');
+            list.innerHTML = "";
+            snap.forEach(child => {
+                const dep = child.val();
+                if(dep.status === 'pending') {
+                    list.innerHTML += `
+                        <div class="item-card">
+                            <div>
+                                <b>المبلغ: ${dep.amt} ج.م</b><br>
+                                <small>ID: ${dep.uid}</small>
+                            </div>
+                            <button class="btn btn-green" onclick="confirmDeposit('${dep.uid}', ${dep.amt}, '${child.key}')">تأكيد الشحن</button>
+                        </div>`;
+                }
             });
+        });
 
-            // 2. تحديث الركاب (من المحافظ والجلسات)
-            db.ref('wallets').on('value', s => {
-                let pTable = document.getElementById('passengers-table');
-                let pCount = 0; pTable.innerHTML = "";
-                s.forEach(c => {
-                    pCount++;
-                    pTable.innerHTML += `<tr><td>راكب #${c.key.substring(0,5)}</td><td>${c.val()} ج.م</td><td>نشط</td></tr>`;
-                });
-                document.getElementById('p-count').innerText = pCount;
-            });
-
-            // 3. الأرباح والرحلات
-            db.ref('admin_earnings').on('value', s => document.getElementById('revenue').innerText = (s.val()||0).toFixed(2) + " ج.م");
-            db.ref('orders').on('value', s => document.getElementById('t-count').innerText = s.numChildren());
-
-            // 4. الجلسات الحية
-            db.ref('active_sessions').on('value', s => {
-                let list = document.getElementById('live-users'); list.innerHTML = "";
-                s.forEach(c => {
-                    list.innerHTML += `<div style="background:#334155; padding:5px 12px; border-radius:20px; font-size:12px;">🟢 ${c.val().name}</div>`;
-                });
-            });
+        async function confirmDeposit(uid, amt, key) {
+            const userRef = rtdb.ref('users/' + uid + '/balance');
+            const snap = await userRef.once('value');
+            const currentBal = snap.val() || 0;
+            await userRef.set(currentBal + parseInt(amt));
+            await rtdb.ref('deposits/' + key).remove();
+            alert("تم إضافة الرصيد للراكب.");
         }
 
-        function verify(id) { firebase.database().ref('drivers/'+id).update({status:'verified'}); }
+        // 3. جلب طلبات تسديد العمولات (لفك الحظر)
+        rtdb.ref('commission_requests').on('value', snap => {
+            const list = document.getElementById('commission-list');
+            list.innerHTML = "";
+            snap.forEach(child => {
+                const req = child.val();
+                list.innerHTML += `
+                    <div class="item-card" style="border-right-color: var(--green)">
+                        <div>
+                            <b>${req.name}</b> سدد <b>${req.amount} ج.م</b><br>
+                            <small>رقم العملية: ${req.ref}</small>
+                        </div>
+                        <button class="btn btn-green" onclick="unlockDriver('${req.dUid}', '${child.key}')">فتح الحساب ✅</button>
+                    </div>`;
+            });
+        });
+
+        async function unlockDriver(dUid, reqKey) {
+            await rtdb.ref('drivers/' + dUid).update({
+                status: 'approved',
+                tripsToday: 0,
+                sessionEarnings: 0
+            });
+            await rtdb.ref('commission_requests/' + reqKey).remove();
+            alert("تم فك حظر السائق وتصفير رحلاته.");
+        }
     </script>
 </body>
 </html>
