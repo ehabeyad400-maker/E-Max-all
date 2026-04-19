@@ -3,43 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Max | Admin Panel</title>
+    <title>E-Max | Admin Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --blue: #3b82f6; --green: #10b981; --red: #ef4444; --text: #f8fafc; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .section { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #334155; }
-        h2 { color: var(--blue); border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        h2 { color: var(--blue); border-bottom: 1px solid #334155; padding-bottom: 10px; margin-top: 0; }
         .item-card { background: #0f172a; padding: 15px; border-radius: 12px; margin-top: 10px; border-right: 5px solid var(--blue); display: flex; justify-content: space-between; align-items: center; }
-        .btn { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; margin-right: 5px; }
+        .btn { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-green { background: var(--green); color: white; }
         .btn-red { background: var(--red); color: white; }
-        .badge { font-size: 12px; background: #334155; padding: 4px 8px; border-radius: 5px; }
+        .info-text { font-size: 14px; color: #94a3b8; }
     </style>
 </head>
 <body>
 
-    <h1>لوحة تحكم E-MAX 👑</h1>
+    <h1 style="text-align: center;">لوحة تحكم E-MAX 👑</h1>
+
+    <div class="section">
+        <h2>طلبات شحن المحفظة (ركاب) 💰</h2>
+        <div id="deposit-requests">
+            <p class="info-text">لا يوجد طلبات شحن حالياً...</p>
+        </div>
+    </div>
 
     <div class="section">
         <h2>سائقين بانتظار التفعيل 🚕</h2>
-        <div id="pending-drivers"></div>
+        <div id="pending-drivers">
+            <p class="info-text">لا يوجد سواقين جدد...</p>
+        </div>
     </div>
 
     <div class="section">
-        <h2>طلبات شحن رصيد (ركاب) 💰</h2>
-        <div id="deposit-requests"></div>
-    </div>
-
-    <div class="section">
-        <h2>طلبات سحب أرباح (سائقين) 🏧</h2>
-        <div id="withdraw-requests"></div>
-    </div>
-
-    <div class="section">
-        <h2>تحصيلات العمولة (10%) 📈</h2>
-        <div id="commission-list"></div>
+        <h2>تحصيل العمولات (10%) 📈</h2>
+        <div id="commission-list">
+            <p class="info-text">لا يوجد تحصيلات حالياً...</p>
+        </div>
     </div>
 
     <script>
@@ -52,7 +53,51 @@
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
 
-        // 1. جلب السائقين الجدد
+        // --- 1. معالجة طلبات الشحن (تعديل زيادة الفلوس) ---
+        rtdb.ref('deposits').on('value', snap => {
+            const list = document.getElementById('deposit-requests');
+            list.innerHTML = "";
+            if(!snap.exists()) { list.innerHTML = '<p class="info-text">لا يوجد طلبات شحن حالياً...</p>'; return; }
+            
+            snap.forEach(child => {
+                const dep = child.val();
+                if(dep.status === 'pending') {
+                    list.innerHTML += `
+                        <div class="item-card" style="border-right-color: var(--green)">
+                            <div>
+                                <b style="font-size:18px;">المبلغ: ${dep.amt} ج.م</b><br>
+                                <small class="info-text">كود المستخدم: ${dep.uid}</small>
+                            </div>
+                            <button class="btn btn-green" onclick="confirmDeposit('${dep.uid}', ${dep.amt}, '${child.key}')">تأكيد وإضافة الرصيد</button>
+                        </div>`;
+                }
+            });
+        });
+
+        async function confirmDeposit(uid, amt, key) {
+            // الوصول لمسار رصيد الراكب
+            const userRef = rtdb.ref('users/' + uid + '/balance');
+            
+            try {
+                const snap = await userRef.once('value');
+                // التعديل الجوهري: تحويل كل القيم لأرقام Number لضمان الجمع الصحيح
+                const currentBal = Number(snap.val()) || 0;
+                const depositAmt = Number(amt);
+                const newTotal = currentBal + depositAmt;
+
+                // تحديث قاعدة البيانات
+                await userRef.set(newTotal);
+                
+                // حذف الطلب من قائمة الأدمن بعد النجاح
+                await rtdb.ref('deposits/' + key).remove();
+                
+                alert("تمت الإضافة! رصيد الراكب أصبح: " + newTotal + " ج.م");
+            } catch (e) {
+                alert("خطأ في النظام: " + e.message);
+            }
+        }
+
+        // --- 2. تفعيل السائقين ---
         rtdb.ref('drivers').on('value', snap => {
             const list = document.getElementById('pending-drivers');
             list.innerHTML = "";
@@ -63,10 +108,9 @@
                         <div class="item-card">
                             <div>
                                 <b>${d.name}</b><br>
-                                <small>${d.phone}</small><br>
-                                <a href="${d.documents}" target="_blank" style="color:var(--blue)">فتح المستندات 📄</a>
+                                <small>${d.phone}</small>
                             </div>
-                            <button class="btn btn-green" onclick="approveDriver('${child.key}')">تفعيل</button>
+                            <button class="btn btn-green" onclick="approveDriver('${child.key}')">تفعيل الحساب</button>
                         </div>`;
                 }
             });
@@ -74,45 +118,17 @@
 
         function approveDriver(id) {
             rtdb.ref('drivers/' + id).update({ status: 'approved' });
-            alert("تم تفعيل السائق بنجاح!");
+            alert("تم تفعيل السائق!");
         }
 
-        // 2. جلب طلبات الشحن
-        rtdb.ref('deposits').on('value', snap => {
-            const list = document.getElementById('deposit-requests');
-            list.innerHTML = "";
-            snap.forEach(child => {
-                const dep = child.val();
-                if(dep.status === 'pending') {
-                    list.innerHTML += `
-                        <div class="item-card">
-                            <div>
-                                <b>المبلغ: ${dep.amt} ج.م</b><br>
-                                <small>ID: ${dep.uid}</small>
-                            </div>
-                            <button class="btn btn-green" onclick="confirmDeposit('${dep.uid}', ${dep.amt}, '${child.key}')">تأكيد الشحن</button>
-                        </div>`;
-                }
-            });
-        });
-
-        async function confirmDeposit(uid, amt, key) {
-            const userRef = rtdb.ref('users/' + uid + '/balance');
-            const snap = await userRef.once('value');
-            const currentBal = snap.val() || 0;
-            await userRef.set(currentBal + parseInt(amt));
-            await rtdb.ref('deposits/' + key).remove();
-            alert("تم إضافة الرصيد للراكب.");
-        }
-
-        // 3. جلب طلبات تسديد العمولات (لفك الحظر)
+        // --- 3. فك حظر المديونية ---
         rtdb.ref('commission_requests').on('value', snap => {
             const list = document.getElementById('commission-list');
             list.innerHTML = "";
             snap.forEach(child => {
                 const req = child.val();
                 list.innerHTML += `
-                    <div class="item-card" style="border-right-color: var(--green)">
+                    <div class="item-card" style="border-right-color: var(--gold)">
                         <div>
                             <b>${req.name}</b> سدد <b>${req.amount} ج.م</b><br>
                             <small>رقم العملية: ${req.ref}</small>
@@ -129,7 +145,7 @@
                 sessionEarnings: 0
             });
             await rtdb.ref('commission_requests/' + reqKey).remove();
-            alert("تم فك حظر السائق وتصفير رحلاته.");
+            alert("تم فك الحظر بنجاح.");
         }
     </script>
 </body>
