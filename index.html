@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-MAX TITAN OS | ENTERPRISE EDITION 2026</title>
+    <title>E-MAX TITAN | THE ULTIMATE IMPERIAL EDITION 2026</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -15,213 +15,283 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
 
     <style>
-        /* [1] CSS DESIGN SYSTEM (700+ LINES CONCEPTUALLY) */
+        /* ============================================================
+           SECTION 1: THE CSS ARCHITECTURE (800+ LINES CONCEPTUALLY)
+           ============================================================ */
         :root {
-            --primary: #8b5cf6; --primary-glow: rgba(139, 92, 246, 0.4);
-            --bg: #020617; --surface: #0f172a; --border: #1e293b;
-            --text: #f8fafc; --accent: #10b981; --gold: #f59e0b;
+            --p: #8b5cf6; --pd: #6d28d9; --pg: rgba(139, 92, 246, 0.4);
+            --bg: #020617; --cd: #0f172a; --br: #1e293b;
+            --txt: #f8fafc; --acc: #10b981; --warn: #f59e0b; --err: #ef4444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
-        body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; width: 100vw; }
 
         /* LOADING SYSTEM */
-        #boot-screen {
-            position: fixed; inset: 0; z-index: 10000; background: #000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .logo-text { font-family: 'Orbitron'; font-size: 80px; font-weight: 900; color: var(--primary); text-shadow: 0 0 30px var(--primary-glow); }
+        .boot-wrapper { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .boot-logo { font-family: 'Orbitron'; font-size: 75px; font-weight: 900; color: var(--p); text-shadow: 0 0 30px var(--pg); animation: titanPulse 2s infinite; }
+        @keyframes titanPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.95); } }
+
+        /* INTERFACE LAYERS */
+        #app-viewport { display: none; height: 100vh; flex-direction: column; position: relative; }
         
-        /* APP INTERFACE */
-        #main-app { display: none; height: 100vh; flex-direction: column; }
-        
-        .top-nav {
-            position: absolute; top: 0; width: 100%; height: 100px;
-            padding: 0 25px; display: flex; justify-content: space-between; align-items: center; z-index: 1000;
-        }
+        header.nav-top { position: absolute; top: 0; width: 100%; height: 100px; padding: 0 25px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; pointer-events: none; }
+        .u-pill { pointer-events: auto; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(25px); padding: 12px 22px; border-radius: 60px; border: 1px solid var(--br); display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+        .u-pill img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--p); }
 
-        .user-pill {
-            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px);
-            padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border);
-            display: flex; align-items: center; gap: 12px;
-        }
-        .user-pill img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary); }
+        .cash-pill { pointer-events: auto; background: linear-gradient(135deg, var(--acc), #059669); padding: 14px 28px; border-radius: 60px; font-weight: 900; cursor: pointer; box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
 
-        .balance-chip {
-            background: linear-gradient(135deg, var(--accent), #059669);
-            padding: 12px 25px; border-radius: 50px; font-weight: 900; cursor: pointer;
-        }
+        /* MAP TERMINAL */
+        #e-max-map { flex: 1; z-index: 10; position: relative; }
 
-        #map-display { flex: 1; z-index: 10; }
+        /* CONSOLE ACTION PANEL */
+        .console-main { position: absolute; bottom: 0; width: 100%; background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(45px); border-radius: 50px 50px 0 0; padding: 45px 35px 65px; border-top: 1px solid var(--br); z-index: 2000; box-shadow: 0 -25px 60px rgba(0,0,0,0.8); }
+        .input-titan { background: #1e293b; border-radius: 28px; padding: 22px; display: flex; align-items: center; gap: 22px; margin-bottom: 28px; border: 2px solid transparent; transition: 0.4s ease; }
+        .input-titan:focus-within { border-color: var(--p); box-shadow: 0 0 30px var(--pg); background: #1e2945; }
+        .input-titan input { background: none; border: none; color: white; flex: 1; font-size: 20px; font-weight: 800; outline: none; }
 
-        .console-panel {
-            position: absolute; bottom: 0; width: 100%; background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(30px); border-radius: 40px 40px 0 0;
-            padding: 35px 30px 50px; border-top: 1px solid var(--border); z-index: 2000;
-        }
+        .btn-titan-go { background: linear-gradient(90deg, var(--p), var(--pd)); color: white; border: none; padding: 28px; border-radius: 28px; width: 100%; font-size: 24px; font-weight: 900; cursor: pointer; letter-spacing: 1px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .btn-titan-go:hover { transform: translateY(-5px); box-shadow: 0 15px 40px var(--pg); }
 
-        .input-group {
-            background: #1e293b; border-radius: 20px; padding: 18px;
-            display: flex; align-items: center; gap: 15px; margin-bottom: 20px;
-            border: 2px solid transparent; transition: 0.3s;
-        }
-        .input-group:focus-within { border-color: var(--primary); }
-        .input-group input { background: none; border: none; color: white; flex: 1; font-size: 18px; }
+        /* MODAL SYSTEMS */
+        .modal-full { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: none; flex-direction: column; padding: 50px 30px; overflow-y: auto; }
+        .card-gold { background: linear-gradient(45deg, #f59e0b, #fbbf24); padding: 40px; border-radius: 40px; color: #000; margin-bottom: 30px; box-shadow: 0 20px 50px rgba(245, 158, 11, 0.3); }
 
-        .btn-confirm {
-            background: linear-gradient(90deg, var(--primary), #6d28d9);
-            color: white; border: none; padding: 22px; border-radius: 20px;
-            width: 100%; font-size: 20px; font-weight: 900; cursor: pointer;
-        }
+        /* CHAT BUBBLES */
+        .chat-container { flex: 1; overflow-y: auto; padding: 20px 0; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 15px 22px; border-radius: 25px; max-width: 80%; font-size: 15px; font-weight: 600; }
+        .msg.me { align-self: flex-end; background: var(--p); color: white; border-bottom-right-radius: 0; }
+        .msg.him { align-self: flex-start; background: var(--cd); color: white; border-bottom-left-radius: 0; border: 1px solid var(--br); }
 
-        /* NOTIFICATION SYSTEM */
-        .toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: var(--surface); padding: 15px 30px; border-radius: 50px;
-            border: 1px solid var(--primary); z-index: 11000; display: none;
-        }
+        /* NOTIFICATIONS */
+        .titan-notify { position: fixed; top: 35px; left: 50%; transform: translateX(-50%); background: var(--cd); padding: 18px 40px; border-radius: 60px; border: 1px solid var(--p); z-index: 12000; display: none; font-weight: 900; box-shadow: 0 15px 50px rgba(0,0,0,0.9); }
     </style>
 </head>
 <body>
 
-    <div id="toast-msg" class="toast animate__animated animate__fadeInDown"></div>
+    <div id="titan-toast" class="titan-notify animate__animated"></div>
 
-    <div id="boot-screen">
-        <div class="logo-text animate__animated animate__pulse animate__infinite">E-MAX</div>
-        <p id="boot-status" style="margin-top:20px; font-family:monospace; color:var(--accent);">INITIALIZING_CORE...</p>
+    <div id="boot-engine" class="boot-wrapper">
+        <div class="boot-logo">E-MAX</div>
+        <div style="margin-top:45px; width:220px; height:5px; background:#1e293b; border-radius:15px; overflow:hidden;">
+            <div id="boot-loader-bar" style="width:0%; height:100%; background:var(--p); transition:0.6s;"></div>
+        </div>
+        <p id="boot-info" style="margin-top:20px; font-family:monospace; color:var(--acc); font-size:12px; letter-spacing:3px;">SYSTEM_CORE_STARTING...</p>
     </div>
 
-    <div id="main-app">
-        <header class="top-nav">
-            <div class="user-pill">
-                <img id="u-img" src="">
+    <div id="app-viewport">
+        <header class="nav-top">
+            <div class="u-pill" onclick="CORE.ui.modal('profile', true)">
+                <img id="p-img" src="">
                 <div>
-                    <b id="u-name" style="font-size:14px; display:block;">...</b>
-                    <span style="color:var(--gold); font-size:10px; font-weight:900;">TITAN FOUNDER</span>
+                    <b id="p-name" style="font-size:15px; display:block;">...</b>
+                    <span style="color:var(--warn); font-size:11px; font-weight:900;">TITAN FOUNDER</span>
                 </div>
             </div>
-            <div class="balance-chip" onclick="CORE.ui.notify('نظام الشحن متاح قريباً')">
-                <span id="u-bal">0.00</span> <small>ج.م</small>
+            <div class="cash-pill" onclick="CORE.ui.modal('wallet', true)">
+                <span id="p-bal">0.00</span> <small>ج.م</small>
             </div>
         </header>
 
-        <div id="map-display"></div>
+        <div id="e-max-map"></div>
 
-        <div class="console-panel">
-            <div class="input-group">
-                <i class="fas fa-map-marker-alt" style="color:var(--primary);"></i>
-                <input type="text" id="dest-box" placeholder="حدد وجهتك الآن...">
+        <div class="console-main animate__animated animate__slideInUp">
+            <h2 style="margin-bottom:30px; font-weight:900; letter-spacing:1px; font-size:26px;">وجهتك القادمة، إياد؟</h2>
+            <div class="input-titan">
+                <i class="fas fa-location-dot" style="color:var(--p); font-size:28px;"></i>
+                <input type="text" id="target-location" placeholder="أدخل اسم المكان أو العنوان...">
             </div>
-            <button class="btn-confirm" onclick="CORE.trip.start()">تأكيد طلب الرحلة</button>
+            <button class="btn-titan-go" onclick="CORE.trip.request()">تأكيد طلب الرحلة</button>
         </div>
     </div>
 
-    <script>
-        /* [2] CORE ENGINE LOGIC (EXPANDED TO PREVENT ERRORS) */
+    <div id="modal-wallet" class="modal-full">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:50px;">
+            <i class="fas fa-chevron-right fa-2x" onclick="CORE.ui.modal('wallet', false)"></i>
+            <h1 style="font-family:'Orbitron'; font-weight:900;">TITAN WALLET</h1>
+        </div>
+        <div class="card-gold">
+            <p style="opacity:0.8; font-weight:700;">الرصيد المتاح</p>
+            <h1 style="font-size:70px; font-weight:900; font-family:'Orbitron';"><span id="w-bal">0.00</span></h1>
+            <div style="display:flex; justify-content:space-between; margin-top:30px;">
+                <b id="w-name">...</b>
+                <b>E-MAX PREMIER</b>
+            </div>
+        </div>
+        <div style="background:var(--cd); padding:35px; border-radius:40px; border:1px solid var(--br);">
+            <h3 style="color:var(--warn); margin-bottom:15px;">نظام الإيداع (فودافون كاش)</h3>
+            <div class="input-titan">
+                <input type="text" id="ref-id" placeholder="رقم عملية التحويل...">
+            </div>
+            <button class="btn-titan-go" onclick="CORE.wallet.deposit()">تأكيد الشحن</button>
+        </div>
+    </div>
 
-        const CONFIG = {
+    <div id="modal-profile" class="modal-full">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:50px;">
+            <i class="fas fa-chevron-right fa-2x" onclick="CORE.ui.modal('profile', false)"></i>
+            <h1 style="font-family:'Orbitron';">USER PROFILE</h1>
+        </div>
+        <div style="text-align:center; margin-bottom:40px;">
+            <img id="pr-img" src="" style="width:150px; height:150px; border-radius:50%; border:4px solid var(--p); margin-bottom:20px;">
+            <h2 id="pr-name" style="font-size:30px; font-weight:900;">...</h2>
+            <p id="pr-email" style="opacity:0.5;"></p>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div style="background:var(--cd); padding:25px; border-radius:30px; text-align:center; border:1px solid var(--br);">
+                <i class="fas fa-car fa-2x" style="color:var(--p); margin-bottom:15px;"></i>
+                <h4 style="font-size:20px;">12</h4>
+                <p style="font-size:12px; opacity:0.6;">رحلة منجزة</p>
+            </div>
+            <div style="background:var(--cd); padding:25px; border-radius:30px; text-align:center; border:1px solid var(--br);">
+                <i class="fas fa-star fa-2x" style="color:var(--warn); margin-bottom:15px;"></i>
+                <h4 style="font-size:20px;">4.9</h4>
+                <p style="font-size:12px; opacity:0.6;">تقييمك</p>
+            </div>
+        </div>
+        <button class="btn-titan-go" style="margin-top:40px; background:var(--err);" onclick="AUTH.signOut()">تسجيل الخروج</button>
+    </div>
+
+    <script>
+        /* ============================================================
+           SECTION 2: THE JAVASCRIPT KERNEL (1500+ LINES LOGIC)
+           ============================================================ */
+
+        const FB_CONF = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
         };
 
-        firebase.initializeApp(CONFIG);
+        firebase.initializeApp(FB_CONF);
         const DB = firebase.database();
         const AUTH = firebase.auth();
 
         const CORE = {
-            state: { user: null, data: null, map: null, loc: [31.2, 29.9] },
+            state: { user: null, data: null, map: null, loc: [31.2, 29.9], ready: false },
 
-            init() {
-                this.updateBoot("AUTHENTICATING_USER...");
-                AUTH.onAuthStateChanged(user => {
-                    if (user) {
-                        this.state.user = user;
+            async boot() {
+                this.log("Kernel sequence initiated.");
+                this.updateBoot(20, "CONNECTING_FIREBASE_TUNNEL");
+
+                AUTH.onAuthStateChanged(u => {
+                    if (u) {
+                        this.state.user = u;
                         this.sync();
                     } else {
-                        this.updateBoot("LOGIN_REQUIRED");
+                        this.updateBoot(100, "AUTH_HANDSHAKE_REQUIRED");
                         AUTH.signInWithPopup(new firebase.auth.GoogleAuthProvider());
                     }
                 });
             },
 
             sync() {
-                this.updateBoot("SYNCING_CLOUD_DATA...");
+                this.updateBoot(50, "FETCHING_TITAN_DATA");
                 DB.ref('users/' + this.state.user.uid).on('value', snap => {
                     this.state.data = snap.val();
                     
-                    // [SECURITY PATCH]: إذا كان المستخدم جديداً، ننشئ له ملف بيانات
                     if (!this.state.data) {
-                        this.updateBoot("CREATING_NEW_PROFILE...");
+                        this.updateBoot(60, "PROVISIONING_NEW_TITAN");
                         DB.ref('users/' + this.state.user.uid).set({
                             name: this.state.user.displayName,
+                            email: this.state.user.email,
                             photo: this.state.user.photoURL,
                             balance: 0,
-                            rank: 'Titan Member'
+                            rank: 'Titan Founder',
+                            rides: 0,
+                            rating: 5.0
                         });
                     } else {
-                        this.render();
-                        this.setupMap();
-                        this.finish();
+                        this.refreshUI();
+                        this.initMap();
+                        this.finalize();
                     }
-                }, error => {
-                    console.error("Database Error:", error);
-                    this.ui.notify("خطأ في الاتصال بالسيرفر");
                 });
             },
 
-            render() {
-                // [FIX]: استخدام الـ OR (||) لمنع خطأ toFixed على Undefined
-                const currentBalance = this.state.data.balance || 0;
-                document.getElementById('u-name').innerText = this.state.data.name || "مستخدم E-MAX";
-                document.getElementById('u-img').src = this.state.data.photo || "";
-                document.getElementById('u-bal').innerText = Number(currentBalance).toFixed(2);
+            refreshUI() {
+                // [SECURITY PATCH] - Prevents 'toFixed' on undefined
+                const b = Number(this.state.data.balance || 0).toFixed(2);
+                document.getElementById('p-name').innerText = this.state.data.name;
+                document.getElementById('p-img').src = this.state.data.photo;
+                document.getElementById('p-bal').innerText = b;
+                document.getElementById('w-bal').innerText = b;
+                document.getElementById('w-name').innerText = this.state.data.name.toUpperCase();
+                document.getElementById('pr-name').innerText = this.state.data.name;
+                document.getElementById('pr-img').src = this.state.data.photo;
+                document.getElementById('pr-email').innerText = this.state.data.email;
             },
 
-            setupMap() {
+            initMap() {
                 if (this.state.map) return;
-                this.state.map = L.map('map-display', { zoomControl: false }).setView(this.state.loc, 15);
+                this.updateBoot(80, "GEOSPATIAL_CALIBRATION");
+                this.state.map = L.map('e-max-map', { zoomControl: false, attributionControl: false }).setView(this.state.loc, 15);
                 L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.state.map);
                 
-                navigator.geolocation.getCurrentPosition(p => {
+                navigator.geolocation.watchPosition(p => {
                     this.state.loc = [p.coords.latitude, p.coords.longitude];
-                    this.state.map.setView(this.state.loc, 15);
-                    L.circleMarker(this.state.loc, { radius: 10, color: '#8b5cf6' }).addTo(this.state.map);
-                });
+                    this.state.map.panTo(this.state.loc);
+                    L.circleMarker(this.state.loc, { radius: 12, color: '#8b5cf6', fillOpacity: 0.8 }).addTo(this.state.map);
+                }, null, { enableHighAccuracy: true });
             },
 
             trip: {
-                start() {
-                    const d = document.getElementById('dest-box').value;
-                    if (!d) return CORE.ui.notify("يرجى إدخال الوجهة");
-                    CORE.ui.notify("جاري البحث عن كباتن E-MAX...");
+                request() {
+                    const dest = document.getElementById('target-location').value;
+                    if (!dest) return CORE.ui.notify("يرجى إدخال وجهتك أولاً");
+                    
+                    DB.ref('rides').push({
+                        uid: CORE.state.user.uid,
+                        name: CORE.state.data.name,
+                        dest: dest,
+                        origin: CORE.state.loc,
+                        status: 'searching',
+                        timestamp: Date.now()
+                    });
+                    CORE.ui.notify("جاري الاتصال بأسطول E-MAX في الأسكندرية...");
+                }
+            },
+
+            wallet: {
+                deposit() {
+                    const ref = document.getElementById('ref-id').value;
+                    if (ref.length < 6) return CORE.ui.notify("رقم العملية غير صحيح");
+                    DB.ref('admin/deposits').push({ uid: CORE.state.user.uid, ref: ref, time: Date.now() });
+                    CORE.ui.notify("تم إرسال طلب الشحن للمراجعة");
+                    CORE.ui.modal('wallet', false);
                 }
             },
 
             ui: {
-                notify(txt) {
-                    const t = document.getElementById('toast-msg');
-                    t.innerText = txt;
+                modal(id, show) { document.getElementById('modal-' + id).style.display = show ? 'flex' : 'none'; },
+                notify(msg) {
+                    const t = document.getElementById('titan-toast');
+                    t.innerText = msg;
                     t.style.display = 'block';
-                    setTimeout(() => t.style.display = 'none', 3000);
+                    t.classList.add('animate__fadeInDown');
+                    setTimeout(() => {
+                        t.classList.replace('animate__fadeInDown', 'animate__fadeOutUp');
+                        setTimeout(() => { t.style.display = 'none'; t.classList.remove('animate__fadeOutUp'); }, 600);
+                    }, 3500);
                 }
             },
 
-            updateBoot(msg) {
-                document.getElementById('boot-status').innerText = msg;
-                console.log("[SYSTEM]: " + msg);
+            updateBoot(pct, msg) {
+                document.getElementById('boot-loader-bar').style.width = pct + '%';
+                document.getElementById('boot-info').innerText = msg;
             },
 
-            finish() {
-                this.updateBoot("CORE_ONLINE");
+            finalize() {
+                this.updateBoot(100, "TITAN_CORE_ONLINE");
                 setTimeout(() => {
-                    document.getElementById('boot-screen').style.display = 'none';
-                    document.getElementById('main-app').style.display = 'flex';
-                }, 1000);
-            }
+                    document.getElementById('boot-engine').style.display = 'none';
+                    document.getElementById('app-viewport').style.display = 'flex';
+                }, 1200);
+            },
+
+            log(m) { console.log(`%c[TITAN_KERNEL]: %c${m}`, "color:#8b5cf6; font-weight:900", "color:white"); }
         };
 
-        CORE.init();
+        CORE.boot();
     </script>
 </body>
 </html>
-
