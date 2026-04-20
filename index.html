@@ -10,7 +10,15 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+<script> // في كود الراكب عند طلب الرحلة
+rtdb.ref('rides').push({
+    riderId: userUid,
+    riderName: userName,
+    destination: destinationText, // الوجهة اللي كتبها أو حددها
+    riderLoc: { lat: currentLat, lng: currentLng }, // موقعه الحالي
+    status: 'searching'
+}); </script>
+    
     <style>
         :root { --main: #3b82f6; --dark: #0f172a; --card: #1e293b; --text: #f8fafc; --green: #10b981; --red: #ef4444; }
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
