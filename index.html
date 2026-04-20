@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-MAX | تطبيق الراكب</title>
+    <title>E-MAX Rider | النسخة الاحترافية</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -12,380 +12,571 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary: #6366f1; --secondary: #4f46e5; --bg: #0f172a;
-            --card: #1e293b; --text: #f8fafc; --accent: #10b981;
-            --danger: #ef4444; --gold: #fbbf24;
+            --p: #6366f1; --p-dark: #4338ca; --s: #10b981;
+            --bg: #0b0f1a; --surface: #161b2c; --surface-light: #23293f;
+            --t-main: #ffffff; --t-dim: #94a3b8; --danger: #f43f5e;
+            --gold: #fbbf24; --shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        * { 
+            box-sizing: border-box; font-family: 'Cairo', sans-serif;
+            -webkit-tap-highlight-color: transparent; outline: none;
+        }
 
-        /* شاشات كاملة */
-        .page { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        .hidden { display: none !important; }
+        body, html { 
+            margin: 0; padding: 0; background: var(--bg); color: var(--t-main); 
+            height: 100vh; overflow: hidden;
+        }
 
-        /* البطاقات والحاويات */
-        .card { background: var(--card); padding: 25px; border-radius: 24px; width: 100%; max-width: 450px; border: 1px solid #334155; box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
-        .input-group { width: 100%; margin-bottom: 15px; text-align: right; }
-        label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
+        /* شاشات الانتقال */
+        .screen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+            display: none; flex-direction: column; animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: scale(1); } }
+
+        .active-screen { display: flex; }
+
+        /* شاشة الدخول (Google Login) */
+        #screen-login {
+            background: linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%);
+            align-items: center; justify-content: center; padding: 30px;
+        }
+
+        .login-card {
+            background: var(--surface); padding: 40px 30px; border-radius: 30px;
+            width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--surface-light);
+            box-shadow: var(--shadow);
+        }
+
+        .google-btn {
+            background: white; color: #000; padding: 15px; border-radius: 15px;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            font-weight: 700; cursor: pointer; border: none; width: 100%;
+            transition: 0.3s; margin-top: 25px;
+        }
+        .google-btn:hover { background: #f1f1f1; transform: translateY(-3px); }
+
+        /* الواجهة الرئيسية */
+        #app-layout { height: 100%; display: flex; flex-direction: column; }
         
-        input, select {
-            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #334155;
-            background: #0f172a; color: white; outline: none; font-size: 16px;
+        header {
+            padding: 15px 20px; background: var(--surface); display: flex;
+            justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--surface-light); z-index: 10;
         }
 
-        .btn {
-            border: none; padding: 16px; border-radius: 16px; font-weight: bold;
-            cursor: pointer; width: 100%; transition: 0.3s; font-size: 16px;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-accent { background: var(--accent); color: white; }
-        .btn-outline { background: transparent; border: 1px solid #334155; color: white; }
+        .profile-section { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--p); }
 
-        /* الخريطة والواجهة الرئيسية */
+        .wallet-pill {
+            background: rgba(16, 185, 129, 0.1); border: 1px solid var(--s);
+            padding: 6px 15px; border-radius: 50px; color: var(--s);
+            font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .wallet-pill:active { transform: scale(0.95); }
+
         #main-map { flex: 1; width: 100%; z-index: 1; }
-        header { padding: 15px; background: var(--card); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; z-index: 1000; }
 
-        /* شريط الطلب السفلي */
-        .booking-shelf {
-            position: absolute; bottom: 20px; left: 15px; right: 15px; z-index: 1001;
-            background: var(--card); padding: 20px; border-radius: 25px;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.5); border: 1px solid #334155;
+        /* صندوق الطلب السفلي */
+        .bottom-panel {
+            background: var(--surface); padding: 25px; border-radius: 35px 35px 0 0;
+            box-shadow: 0 -15px 40px rgba(0,0,0,0.6); z-index: 5;
+            border-top: 1px solid var(--surface-light);
         }
 
-        /* نظام الرادار واستقبال العروض */
-        #radar-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.9); z-index: 2000; display: flex; flex-direction: column; padding: 20px; }
+        .input-wrapper {
+            background: var(--surface-light); border-radius: 18px;
+            display: flex; align-items: center; padding: 12px 18px; margin-bottom: 15px;
+            border: 1px solid transparent; transition: 0.3s;
+        }
+        .input-wrapper:focus-within { border-color: var(--p); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+        
+        .input-wrapper input {
+            background: transparent; border: none; color: white; flex: 1;
+            padding: 5px; font-size: 16px; font-weight: 600;
+        }
+
+        .btn-main {
+            background: var(--p); color: white; border: none; padding: 18px;
+            border-radius: 20px; width: 100%; font-size: 18px; font-weight: 800;
+            cursor: pointer; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+            transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-main:active { transform: scale(0.97); }
+        .btn-main:disabled { background: var(--t-dim); cursor: not-allowed; }
+
+        /* رادار العروض */
+        #radar-screen {
+            background: rgba(11, 15, 26, 0.98); z-index: 2000;
+            padding: 30px 20px;
+        }
+
+        .radar-animation {
+            width: 120px; height: 120px; border: 4px solid var(--p);
+            border-radius: 50%; position: relative; margin: 50px auto;
+            animation: radarPulse 2s infinite;
+        }
+        @keyframes radarPulse {
+            0% { transform: scale(0.5); opacity: 1; box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            100% { transform: scale(1.5); opacity: 0; box-shadow: 0 0 0 50px rgba(99, 102, 241, 0); }
+        }
+
+        .offers-container {
+            flex: 1; overflow-y: auto; width: 100%; max-width: 500px;
+            display: flex; flex-direction: column; gap: 15px; margin-top: 20px;
+        }
+
         .offer-card {
-            background: var(--card); padding: 15px; border-radius: 20px; margin-bottom: 12px;
-            border: 2px solid var(--primary); display: flex; justify-content: space-between; align-items: center;
-            animation: popIn 0.3s ease;
+            background: var(--surface-light); border-radius: 22px; padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05); display: flex;
+            justify-content: space-between; align-items: center;
+            animation: slideIn 0.4s ease;
         }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* المحفظة */
-        .wallet-item { background: #0f172a; padding: 15px; border-radius: 15px; margin-top: 10px; border: 1px solid #334155; }
-
-        /* الشات */
-        #chat-screen { position: fixed; inset: 0; background: var(--bg); z-index: 3000; display: flex; flex-direction: column; }
-        #chat-msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .bubble { padding: 12px 16px; border-radius: 18px; max-width: 80%; font-size: 15px; }
-        .sent { background: var(--primary); align-self: flex-end; }
-        .received { background: #334155; align-self: flex-start; }
-
-        /* أنيميشن الرادار */
-        .pulse-ring {
-            width: 100px; height: 100px; border: 3px solid var(--primary); border-radius: 50%;
-            position: relative; animation: pulse 2s infinite;
+        /* شاشة المحفظة */
+        .modal-screen {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px;
         }
-        @keyframes pulse { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        .modal-content {
+            background: var(--surface); width: 100%; max-width: 450px;
+            border-radius: 30px; padding: 30px; border: 1px solid var(--surface-light);
+        }
+
+        /* تتبع الرحلة النشطة */
+        .active-ride-info {
+            position: absolute; top: 100px; left: 20px; right: 20px;
+            background: var(--surface); padding: 20px; border-radius: 20px;
+            z-index: 100; border-left: 5px solid var(--p); display: flex;
+            justify-content: space-between; align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        /* الدردشة الاحترافية */
+        #chat-panel {
+            position: fixed; bottom: 0; height: 80vh; width: 100%;
+            background: var(--bg); z-index: 4000; border-radius: 35px 35px 0 0;
+            display: none; flex-direction: column; border-top: 2px solid var(--p);
+        }
+
+        #messages-view { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 12px; }
+        .msg { padding: 12px 18px; border-radius: 20px; max-width: 75%; font-weight: 500; }
+        .msg-me { background: var(--p); align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-them { background: var(--surface-light); align-self: flex-end; border-bottom-right-radius: 2px; }
+
+        /* شريط الحالة والتحميل */
+        .loading-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--p); width: 0%; z-index: 9999; transition: 0.3s; }
     </style>
 </head>
 <body>
 
-    <div id="page-auth" class="page">
-        <div class="card">
-            <h1 style="color:var(--primary); margin:0;">E-MAX</h1>
-            <p style="color:#94a3b8; margin-bottom:25px;">أهلاً بك في عالم التنقل الذكي</p>
-            <div class="input-group">
-                <label>الاسم الكامل</label>
-                <input type="text" id="auth-name" placeholder="أدخل اسمك">
+    <div class="loading-bar" id="top-loader"></div>
+
+    <div id="screen-login" class="screen active-screen">
+        <div class="login-card">
+            <h1 style="font-weight: 900; font-size: 38px; color: var(--p); margin: 0;">E-MAX</h1>
+            <p style="color: var(--t-dim);">أذكى طريقة للتنقل في الإسكندرية</p>
+            <div style="margin: 40px 0;">
+                <img src="https://cdn-icons-png.flaticon.com/512/2099/2099044.png" width="120" alt="Taxi">
             </div>
-            <div class="input-group">
-                <label>رقم الموبايل</label>
-                <input type="tel" id="auth-phone" placeholder="01XXXXXXXXX">
-            </div>
-            <button class="btn btn-primary" onclick="app.register()">ابدأ الآن</button>
+            <button class="google-btn" onclick="core.login()">
+                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="20">
+                تسجيل الدخول باستخدام جوجل
+            </button>
+            <p style="font-size: 12px; color: var(--t-dim); margin-top: 30px;">بمتابعتك أنت توافق على شروط خدمة E-MAX</p>
         </div>
     </div>
 
-    <div id="page-main" class="hidden" style="height:100%; display:flex; flex-direction:column;">
-        <header>
-            <div style="background: #0f172a; padding: 8px 15px; border-radius: 50px; border: 1px solid #334155; cursor: pointer;" onclick="app.showWallet()">
-                💰 <span id="ui-balance">0</span> ج.م
-            </div>
-            <b style="letter-spacing: 2px;">E-MAX</b>
-            <div style="font-size: 20px; cursor: pointer;" onclick="location.reload()">🔄</div>
-        </header>
+    <div id="screen-app" class="screen">
+        <div id="app-layout">
+            <header>
+                <div class="profile-section">
+                    <img id="user-img" class="avatar" src="" alt="User">
+                    <div>
+                        <div id="user-name" style="font-weight: 700; font-size: 14px;">...</div>
+                        <div style="font-size: 10px; color: var(--t-dim);">راكب ذهبي ⭐</div>
+                    </div>
+                </div>
+                <div class="wallet-pill" onclick="core.openWallet()">
+                    <span id="user-balance">0</span> ج.م
+                </div>
+            </header>
 
-        <div id="main-map"></div>
+            <div id="main-map"></div>
 
-        <div id="ui-booking" class="booking-shelf">
-            <div class="input-group" style="margin-bottom: 10px;">
-                <input type="text" id="input-dest" placeholder="إلى أين تريد الذهاب؟">
-            </div>
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <select id="input-payment" style="flex:1">
-                    <option value="cash">💵 كاش</option>
-                    <option value="wallet">💳 محفظة E-MAX</option>
-                </select>
-            </div>
-            <button class="btn btn-primary" onclick="app.requestRide()">
-                <span>🚀</span> اطلب E-MAX الآن
-            </button>
-        </div>
-
-        <div id="ui-active" class="booking-shelf hidden">
-            <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
-                <div style="width:50px; height:50px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px;">🚕</div>
+            <div id="active-ride-status" class="active-ride-info" style="display: none;">
                 <div>
-                    <b id="ui-driver-name">جاري وصول السائق...</b><br>
-                    <small id="ui-ride-price" style="color:var(--gold)"></small>
+                    <div id="driver-status-text" style="font-weight: 800; color: var(--p);">الكابتن في الطريق...</div>
+                    <div id="active-driver-name" style="font-size: 14px;">...</div>
+                </div>
+                <div id="eta-box" style="background: var(--surface-light); padding: 10px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 10px;">السعر</div>
+                    <b id="ride-price-val" style="color: var(--gold);">0 ج.م</b>
                 </div>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-outline" style="flex:1" onclick="app.toggleChat(true)">💬 دردشة</button>
-                <a id="ui-call-btn" href="#" class="btn btn-accent" style="flex:1; text-decoration:none;">📞 اتصال</a>
+
+            <div class="bottom-panel">
+                <div class="input-wrapper">
+                    <span>📍</span>
+                    <input type="text" id="dest-input" placeholder="رايح فين النهاردة؟">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div class="input-wrapper" style="flex: 1; margin: 0;">
+                        <span>💳</span>
+                        <select id="pay-method" style="background:none; border:none; color:white; width:100%; font-family:inherit;">
+                            <option value="cash">دفع كاش</option>
+                            <option value="wallet">محفظة E-MAX</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="btn-request" class="btn-main" onclick="core.startSearching()">
+                    <span>🚀</span> اطلب رحلتك الآن
+                </button>
             </div>
         </div>
     </div>
 
-    <div id="page-radar" class="page hidden">
-        <div class="pulse-ring"></div>
-        <h2 style="margin-top:40px;">جاري البحث عن كباتن...</h2>
-        <p style="color:var(--gold)">ستظهر عروض الأسعار هنا فوراً</p>
+    <div id="radar-screen" class="screen">
+        <div style="text-align: center; margin-top: 50px;">
+            <h2 style="margin: 0; color: var(--p);">جاري البحث عن كباتن</h2>
+            <p style="color: var(--t-dim);">نحن نرسل طلبك لأفضل السائقين حولك</p>
+        </div>
         
-        <div id="offers-list" style="width:100%; max-width:450px; margin-top:20px;">
+        <div class="radar-animation"></div>
+
+        <div class="offers-container" id="offers-list">
             </div>
 
-        <button class="btn btn-outline" style="margin-top:20px; color:var(--danger);" onclick="app.cancelRide()">إلغاء الطلب</button>
+        <div style="padding: 20px; width: 100%; max-width: 400px; margin: auto;">
+            <button class="btn-main" style="background: var(--danger);" onclick="core.cancelSearch()">إلغاء الطلب</button>
+        </div>
     </div>
 
-    <div id="page-wallet" class="page hidden">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>محفظتي</h3>
-                <span onclick="app.hideWallet()" style="cursor:pointer; font-size:24px;">×</span>
-            </div>
-            <div style="font-size:32px; font-weight:bold; margin:20px 0; color:var(--accent);">
-                <span id="wallet-balance">0</span> ج.م
+    <div id="modal-wallet" class="modal-screen">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <h3 style="margin:0">محفظتي الرقمية</h3>
+                <button onclick="core.closeWallet()" style="background:none; border:none; color:white; font-size:24px;">✕</button>
             </div>
             
-            <div class="wallet-item" style="text-align:right;">
-                <b style="color:var(--gold);">شحن رصيد (فودافون كاش)</b>
-                <p style="font-size:12px; color:#94a3b8;">حول المبلغ لرقم الأدمن: 010XXXXXXXX</p>
-                <input type="text" id="charge-ref" class="input-group" style="margin-top:10px;" placeholder="رقم العملية">
-                <button class="btn btn-accent" style="padding:10px;" onclick="app.chargeWallet()">إرسال طلب شحن</button>
+            <div style="background: var(--bg); padding: 30px; border-radius: 25px; text-align: center; margin-bottom: 25px; border: 1px solid var(--surface-light);">
+                <div style="font-size: 14px; color: var(--t-dim);">الرصيد المتاح</div>
+                <div style="font-size: 42px; font-weight: 900; color: var(--s);"><span class="current-balance">0</span> <small style="font-size: 16px;">ج.م</small></div>
+            </div>
+
+            <div style="text-align: right;">
+                <b style="color: var(--gold); display: block; margin-bottom: 10px;">إيداع رصيد (فودافون كاش)</b>
+                <p style="font-size: 13px; color: var(--t-dim);">1. حول المبلغ لرقمنا: 010XXXXXXXX<br>2. ادخل رقم العملية تحت لتأكيد الطلب</p>
+                <div class="input-wrapper">
+                    <input type="text" id="wallet-ref" placeholder="رقم العملية المكون من 12 رقم">
+                </div>
+                <button class="btn-main" onclick="core.depositRequest()" style="background: var(--s);">إرسال طلب إيداع</button>
             </div>
         </div>
     </div>
 
-    <div id="chat-screen" class="hidden">
-        <header>
-            <span onclick="app.toggleChat(false)" style="font-size:24px; cursor:pointer;">×</span>
-            <b>الدردشة مع الكابتن</b>
-            <div style="width:24px;"></div>
-        </header>
-        <div id="chat-msgs"></div>
-        <div style="padding:15px; background:var(--card); display:flex; gap:10px;">
-            <input type="text" id="chat-input" placeholder="اكتب رسالة...">
-            <button class="btn btn-primary" style="width:80px;" onclick="app.sendMsg()">إرسال</button>
+    <div id="chat-panel">
+        <div style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-light);">
+            <div style="font-weight: 700;">دردشة مع الكابتن</div>
+            <button onclick="core.toggleChat(false)" style="background: none; border: none; color: var(--danger); font-size: 18px; font-weight: 700;">إغلاق</button>
         </div>
+        <div id="messages-view"></div>
+        <div style="padding: 20px; background: var(--surface); display: flex; gap: 10px; border-top: 1px solid var(--surface-light);">
+            <input type="text" id="chat-input-msg" class="custom-input" style="flex:1; background: var(--bg); border: none; padding: 15px; border-radius: 15px; color: white;" placeholder="اكتب رسالة...">
+            <button class="btn-main" style="width: 80px;" onclick="core.sendMessage()">إرسال</button>
+        </div>
+    </div>
+
+    <div id="ride-controls" style="position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 5000; display: none; gap: 10px;">
+        <button class="btn-main" style="flex: 1;" onclick="core.toggleChat(true)">💬 دردشة</button>
+        <a id="driver-call-link" href="#" class="btn-main" style="flex: 1; background: var(--s); text-decoration: none;">📞 اتصال</a>
     </div>
 
     <script>
-        // --- إعدادات البرمجة ---
-        const config = {
+        /* =========================================
+           E-MAX CORE ENGINE v2.0
+           Developed for: Eyad Ehab Ibrahim
+           =========================================
+        */
+
+        const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
+            projectId: "e-max-d7438",
         };
-        firebase.initializeApp(config);
-        const db = firebase.database();
+
+        firebase.initializeApp(firebaseConfig);
+        const rtdb = firebase.database();
         const auth = firebase.auth();
 
-        const app = {
+        const core = {
             user: null,
             userData: null,
             map: null,
-            myMarker: null,
+            riderMarker: null,
             driverMarker: null,
-            currentLoc: null,
-            activeRideId: null,
+            currentLocation: null,
+            activeRide: null,
+            watchID: null,
 
             init() {
+                this.updateLoader(30);
                 auth.onAuthStateChanged(u => {
-                    if(u) {
+                    this.updateLoader(100);
+                    if (u) {
                         this.user = u;
-                        this.syncUser();
+                        this.syncProfile();
                     } else {
-                        auth.signInAnonymously();
+                        this.switchScreen('screen-login');
                     }
                 });
             },
 
-            register() {
-                const name = document.getElementById('auth-name').value;
-                const phone = document.getElementById('auth-phone').value;
-                if(!name || !phone) return alert("اكمل البيانات يا بطل");
-                
-                db.ref('users/' + this.user.uid).set({
-                    name, phone, balance: 0, createdAt: Date.now()
-                });
+            login() {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithPopup(provider).catch(e => alert("خطأ في تسجيل الدخول: " + e.message));
             },
 
-            syncUser() {
-                db.ref('users/' + this.user.uid).on('value', snap => {
+            syncProfile() {
+                rtdb.ref('users/' + this.user.uid).on('value', snap => {
                     this.userData = snap.val();
-                    if(this.userData) {
-                        document.getElementById('page-auth').classList.add('hidden');
-                        document.getElementById('page-main').classList.remove('hidden');
-                        document.getElementById('ui-balance').innerText = this.userData.balance;
-                        document.getElementById('wallet-balance').innerText = this.userData.balance;
+                    if (!this.userData) {
+                        // إنشاء حساب جديد لأول مرة
+                        rtdb.ref('users/' + this.user.uid).set({
+                            name: this.user.displayName,
+                            email: this.user.email,
+                            photo: this.user.photoURL,
+                            balance: 0,
+                            trips: 0,
+                            createdAt: Date.now()
+                        });
+                    } else {
+                        this.updateUI();
+                        this.switchScreen('screen-app');
                         this.initMap();
-                        this.checkActiveRide();
+                        this.monitorActiveRides();
                     }
                 });
+            },
+
+            updateUI() {
+                document.getElementById('user-name').innerText = this.userData.name;
+                document.getElementById('user-img').src = this.userData.photo;
+                document.querySelectorAll('.current-balance').forEach(el => el.innerText = this.userData.balance);
+                document.getElementById('user-balance').innerText = this.userData.balance;
             },
 
             initMap() {
-                if(this.map) return;
-                this.map = L.map('main-map', { zoomControl: false }).setView([31.2, 29.9], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
-                
-                navigator.geolocation.watchPosition(p => {
-                    this.currentLoc = { lat: p.coords.latitude, lng: p.coords.longitude };
-                    if(!this.myMarker) {
-                        this.myMarker = L.circleMarker([this.currentLoc.lat, this.currentLoc.lng], {radius:10, color:'#6366f1', fillOpacity:1}).addTo(this.map);
-                    } else {
-                        this.myMarker.setLatLng([this.currentLoc.lat, this.currentLoc.lng]);
-                    }
-                    this.map.panTo([this.currentLoc.lat, this.currentLoc.lng]);
-                }, null, {enableHighAccuracy: true});
+                if (this.map) return;
+                this.map = L.map('main-map', { zoomControl: false }).setView([31.2001, 29.9187], 13);
+                L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.map);
+
+                if (navigator.geolocation) {
+                    this.watchID = navigator.geolocation.watchPosition(p => {
+                        this.currentLocation = { lat: p.coords.latitude, lng: p.coords.longitude };
+                        if (!this.riderMarker) {
+                            this.riderMarker = L.circleMarker([this.currentLocation.lat, this.currentLocation.lng], {
+                                radius: 12, color: '#6366f1', fillOpacity: 0.8, weight: 4
+                            }).addTo(this.map);
+                        } else {
+                            this.riderMarker.setLatLng([this.currentLocation.lat, this.currentLocation.lng]);
+                        }
+                        this.map.panTo([this.currentLocation.lat, this.currentLocation.lng]);
+                    }, null, { enableHighAccuracy: true });
+                }
             },
 
-            requestRide() {
-                const dest = document.getElementById('input-dest').value;
-                const pay = document.getElementById('input-payment').value;
-                if(!dest) return alert("اكتب الوجهة رايح فين؟");
+            startSearching() {
+                const dest = document.getElementById('dest-input').value;
+                const pay = document.getElementById('pay-method').value;
 
-                const rideRef = db.ref('rides').push();
-                this.activeRideId = rideRef.key;
+                if (!dest) return alert("من فضلك حدد الوجهة أولاً");
+                if (pay === 'wallet' && this.userData.balance <= 0) return alert("عذراً، رصيد محفظتك غير كافي");
+
+                this.updateLoader(50);
+                const rideRef = rtdb.ref('rides').push();
+                this.activeRide = { id: rideRef.key, destination: dest };
 
                 rideRef.set({
                     riderId: this.user.uid,
                     riderName: this.userData.name,
-                    riderPhone: this.userData.phone,
+                    riderPhoto: this.userData.photo,
                     destination: dest,
                     payMethod: pay,
                     status: 'searching',
-                    riderLoc: this.currentLoc,
+                    riderLoc: this.currentLocation,
                     createdAt: Date.now()
+                }).then(() => {
+                    this.updateLoader(100);
+                    this.switchScreen('radar-screen');
+                    this.listenForOffers();
                 });
-
-                document.getElementById('page-radar').classList.remove('hidden');
-                this.listenForOffers();
             },
 
             listenForOffers() {
-                db.ref(`rides/${this.activeRideId}/offers`).on('value', snap => {
+                rtdb.ref(`rides/${this.activeRide.id}/offers`).on('value', snap => {
                     const list = document.getElementById('offers-list');
                     list.innerHTML = "";
+                    
+                    if (!snap.exists()) {
+                        list.innerHTML = `<p style="text-align:center; color:var(--t-dim)">في انتظار الكباتن القريبين...</p>`;
+                        return;
+                    }
+
                     snap.forEach(child => {
                         const off = child.val();
-                        const div = document.createElement('div');
-                        div.className = "offer-card";
-                        div.innerHTML = `
-                            <div style="text-align:right">
-                                <b>كابتن ${off.driverName}</b><br>
-                                <span style="color:var(--accent); font-size:20px;">${off.offerPrice} ج.م</span>
+                        const card = document.createElement('div');
+                        card.className = "offer-card";
+                        card.innerHTML = `
+                            <div>
+                                <div style="font-weight:700">كابتن ${off.driverName}</div>
+                                <div style="color:var(--s); font-size:18px; font-weight:900;">${off.offerPrice} ج.م</div>
                             </div>
-                            <button class="btn btn-accent" style="width:auto; padding:10px 20px;" onclick="app.acceptOffer('${child.key}', ${off.offerPrice}, '${off.driverId}', '${off.driverName}', '${off.driverPhone}')">قبول</button>
+                            <button class="btn-main" style="width:auto; padding:10px 25px;" onclick="core.acceptBid('${child.key}', ${off.offerPrice}, '${off.driverId}', '${off.driverName}', '${off.driverPhone}')">قبول</button>
                         `;
-                        list.appendChild(div);
+                        list.appendChild(card);
                     });
                 });
             },
 
-            acceptOffer(offerKey, price, dId, dName, dPhone) {
-                db.ref(`rides/${this.activeRideId}`).update({
+            acceptBid(offerKey, price, dId, dName, dPhone) {
+                this.updateLoader(60);
+                rtdb.ref(`rides/${this.activeRide.id}`).update({
                     status: 'accepted',
                     driverId: dId,
                     driverName: dName,
                     driverPhone: dPhone,
                     finalPrice: price
+                }).then(() => {
+                    this.updateLoader(100);
+                    this.switchScreen('screen-app');
                 });
-                document.getElementById('page-radar').classList.add('hidden');
             },
 
-            checkActiveRide() {
-                db.ref('rides').orderByChild('riderId').equalTo(this.user.uid).on('value', snap => {
+            monitorActiveRides() {
+                rtdb.ref('rides').orderByChild('riderId').equalTo(this.user.uid).on('value', snap => {
                     snap.forEach(child => {
-                        const r = child.val();
-                        if(r.status === 'accepted') {
-                            this.activeRideId = child.key;
-                            document.getElementById('ui-booking').classList.add('hidden');
-                            document.getElementById('ui-active').classList.remove('hidden');
-                            document.getElementById('ui-driver-name').innerText = "الكابتن: " + r.driverName;
-                            document.getElementById('ui-ride-price').innerText = "السعر المتفق عليه: " + r.finalPrice + " ج.م";
-                            document.getElementById('ui-call-btn').href = "tel:" + r.driverPhone;
-                            
-                            if(r.driverLoc) {
-                                if(!this.driverMarker) {
-                                    this.driverMarker = L.marker([r.driverLoc.lat, r.driverLoc.lng]).addTo(this.map).bindPopup("الكابتن").openPopup();
-                                } else {
-                                    this.driverMarker.setLatLng([r.driverLoc.lat, r.driverLoc.lng]);
-                                }
-                            }
+                        const ride = child.val();
+                        if (ride.status === 'accepted') {
+                            this.activeRide = { id: child.key, ...ride };
+                            this.showActiveUI(true);
+                            if (ride.driverLoc) this.updateDriverMarker(ride.driverLoc);
                             this.syncChat();
-                        } else if (r.status === 'completed') {
-                            alert("حمد الله على السلامة! تم إنهاء الرحلة.");
-                            db.ref(`rides/${child.key}`).remove();
+                        } else if (ride.status === 'completed') {
+                            this.showActiveUI(false);
+                            alert("وصلتم بالسلامة! تم إنهاء الرحلة بنجاح.");
+                            rtdb.ref(`rides/${child.key}`).remove();
                             location.reload();
                         }
                     });
                 });
             },
 
-            sendMsg() {
-                const txt = document.getElementById('chat-input').value;
-                if(!txt) return;
-                db.ref(`chats/${this.activeRideId}`).push({
+            updateDriverMarker(loc) {
+                if (!this.driverMarker) {
+                    const carIcon = L.icon({
+                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png',
+                        iconSize: [40, 40]
+                    });
+                    this.driverMarker = L.marker([loc.lat, loc.lng], { icon: carIcon }).addTo(this.map);
+                } else {
+                    this.driverMarker.setLatLng([loc.lat, loc.lng]);
+                }
+            },
+
+            showActiveUI(show) {
+                const statusBox = document.getElementById('active-ride-status');
+                const controls = document.getElementById('ride-controls');
+                const booking = document.querySelector('.bottom-panel');
+
+                if (show) {
+                    statusBox.style.display = 'flex';
+                    controls.style.display = 'flex';
+                    booking.style.display = 'none';
+                    document.getElementById('active-driver-name').innerText = "الكابتن: " + this.activeRide.driverName;
+                    document.getElementById('ride-price-val').innerText = this.activeRide.finalPrice + " ج.م";
+                    document.getElementById('driver-call-link').href = "tel:" + this.activeRide.driverPhone;
+                } else {
+                    statusBox.style.display = 'none';
+                    controls.style.display = 'none';
+                    booking.style.display = 'block';
+                }
+            },
+
+            // نظام المحفظة
+            depositRequest() {
+                const ref = document.getElementById('wallet-ref').value;
+                if (ref.length < 10) return alert("برجاء إدخال رقم عملية صحيح");
+                
+                rtdb.ref('admin_notices/deposits').push({
+                    userId: this.user.uid,
+                    userName: this.user.displayName,
+                    reference: ref,
+                    status: 'pending',
+                    timestamp: Date.now()
+                });
+                alert("تم إرسال الطلب لإياد! سيتم إضافة الرصيد بعد مراجعة العملية.");
+                this.closeWallet();
+            },
+
+            // نظام الدردشة
+            sendMessage() {
+                const input = document.getElementById('chat-input-msg');
+                const text = input.value.trim();
+                if (!text) return;
+
+                rtdb.ref(`chats/${this.activeRide.id}`).push({
                     sender: 'rider',
-                    text: txt,
+                    text: text,
                     time: Date.now()
                 });
-                document.getElementById('chat-input').value = "";
+                input.value = "";
             },
 
             syncChat() {
-                db.ref(`chats/${this.activeRideId}`).on('child_added', snap => {
+                rtdb.ref(`chats/${this.activeRide.id}`).on('child_added', snap => {
                     const m = snap.val();
-                    const box = document.getElementById('chat-msgs');
-                    const d = document.createElement('div');
-                    d.className = `bubble ${m.sender === 'rider' ? 'sent' : 'received'}`;
-                    d.innerText = m.text;
-                    box.appendChild(d);
-                    box.scrollTop = box.scrollHeight;
+                    const view = document.getElementById('messages-view');
+                    const div = document.createElement('div');
+                    div.className = `msg ${m.sender === 'rider' ? 'msg-me' : 'msg-them'}`;
+                    div.innerText = m.text;
+                    view.appendChild(div);
+                    view.scrollTop = view.scrollHeight;
                 });
             },
 
-            showWallet() { document.getElementById('page-wallet').classList.remove('hidden'); },
-            hideWallet() { document.getElementById('page-wallet').classList.add('hidden'); },
-            toggleChat(s) { document.getElementById('chat-screen').classList.toggle('hidden', !s); },
-            
-            chargeWallet() {
-                const ref = document.getElementById('charge-ref').value;
-                if(!ref) return alert("اكتب رقم العملية");
-                db.ref('admin_notices/deposits').push({
-                    userId: this.user.uid,
-                    userName: this.userData.name,
-                    ref: ref,
-                    time: Date.now()
-                });
-                alert("تم إرسال الطلب لإياد، سيتم إضافة الرصيد فور التأكد.");
+            // وظائف المساعدة
+            switchScreen(id) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+                document.getElementById(id).classList.add('active-screen');
             },
 
-            cancelRide() {
-                if(confirm("هل أنت متأكد من إلغاء الطلب؟")) {
-                    db.ref(`rides/${this.activeRideId}`).remove();
+            updateLoader(val) {
+                document.getElementById('top-loader').style.width = val + "%";
+            },
+
+            openWallet() { document.getElementById('modal-wallet').style.display = 'flex'; },
+            closeWallet() { document.getElementById('modal-wallet').style.display = 'none'; },
+            toggleChat(show) { document.getElementById('chat-panel').style.display = show ? 'flex' : 'none'; },
+            cancelSearch() {
+                if(confirm("هل تريد إلغاء البحث عن رحلة؟")) {
+                    rtdb.ref(`rides/${this.activeRide.id}`).remove();
                     location.reload();
                 }
             }
         };
 
-        app.init();
+        // انطلاق التطبيق
+        core.init();
+
     </script>
 </body>
 </html>
