@@ -3,730 +3,823 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-MAX | The Ultimate Enterprise System 2026</title>
+    <title>E-MAX TITAN SYSTEM | BY EYAD EHAB 2026</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
     <style>
-        /* ============================================================
-           SECTION 1: GLOBAL CSS VARIABLES & RESET (Lines 1-150)
-           ============================================================ */
+        /* SECTION 1: GLOBAL DESIGN TOKENS (CSS VARIABLES)
+           هذا الجزء مسؤول عن تعريف الهوية البصرية للبرنامج بالكامل
+        */
         :root {
-            --primary: #8b5cf6;
-            --primary-dark: #6d28d9;
-            --primary-glow: rgba(139, 92, 246, 0.5);
-            --secondary: #1e293b;
-            --accent: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --dark-bg: #020617;
-            --card-bg: #0f172a;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --e-max-primary: #8b5cf6;
+            --e-max-primary-dark: #6d28d9;
+            --e-max-primary-light: #a78bfa;
+            --e-max-primary-glow: rgba(139, 92, 246, 0.4);
+            
+            --e-max-bg-black: #020617;
+            --e-max-card-dark: #0f172a;
+            --e-max-card-light: #1e293b;
+            --e-max-border: #334155;
+            
+            --e-max-text-white: #f8fafc;
+            --e-max-text-dim: #94a3b8;
+            --e-max-text-muted: #64748b;
+            
+            --e-max-success: #10b981;
+            --e-max-danger: #ef4444;
+            --e-max-warning: #f59e0b;
+            --e-max-info: #3b82f6;
+            
+            --e-max-radius-sm: 12px;
+            --e-max-radius-md: 20px;
+            --e-max-radius-lg: 35px;
+            --e-max-radius-xl: 50px;
+            
+            --e-max-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+            --e-max-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* SECTION 2: GLOBAL RESET & SCROLLBAR
+        */
         * {
             margin: 0; padding: 0; box-sizing: border-box;
             font-family: 'Cairo', sans-serif;
-            outline: none; -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        body, html {
-            background-color: var(--dark-bg);
-            color: var(--text-main);
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--e-max-bg-black); }
+        ::-webkit-scrollbar-thumb { background: var(--e-max-primary); border-radius: 10px; }
+
+        body {
+            background-color: var(--e-max-bg-black);
+            color: var(--e-max-text-white);
             height: 100vh; width: 100vw;
             overflow: hidden;
-            scroll-behavior: smooth;
+            touch-action: manipulation;
         }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: var(--dark-bg); }
-        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
-
-        /* ============================================================
-           SECTION 2: UI COMPONENTS (Lines 151-350)
-           ============================================================ */
-        
-        /* Master Loader */
-        .master-loader {
-            position: fixed; inset: 0; z-index: 10000;
-            background: var(--dark-bg);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            transition: var(--transition-smooth);
+        /* SECTION 3: ANIMATION REPOSITORY
+        */
+        @keyframes ripple {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
         }
 
-        .loader-content { text-align: center; }
-        .loader-logo {
-            font-size: 60px; font-weight: 900; color: var(--primary);
-            text-shadow: 0 0 40px var(--primary-glow);
-            animation: pulse-logo 2s infinite ease-in-out;
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
-        @keyframes pulse-logo {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.7; }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* Screen Management */
-        .screen {
-            position: fixed; inset: 0; width: 100%; height: 100%;
+        /* SECTION 4: SYSTEM SCREENS (ARCHITECTURAL LAYERS)
+        */
+        .system-screen {
+            position: fixed; inset: 0;
             display: none; flex-direction: column;
-            background: var(--dark-bg); z-index: 100;
+            z-index: 100; background: var(--e-max-bg-black);
+            overflow: hidden;
         }
 
-        .screen.active { display: flex; animation: screen-in 0.6s ease forwards; }
-
-        @keyframes screen-in {
-            from { transform: scale(1.1); opacity: 0; filter: blur(10px); }
-            to { transform: scale(1); opacity: 1; filter: blur(0); }
+        .system-screen.active-layer {
+            display: flex;
+            animation: fadeIn 0.5s ease-in-out;
         }
 
-        /* Navigation Components */
-        .top-nav {
+        /* Splash Logic */
+        .e-max-splash {
+            position: fixed; inset: 0; z-index: 9999;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        .splash-branding {
+            text-align: center; animation: zoomIn 1s;
+        }
+
+        .titan-logo {
+            font-size: 85px; font-weight: 900;
+            background: linear-gradient(135deg, #fff 0%, var(--e-max-primary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 30px var(--e-max-primary-glow));
+        }
+
+        /* SECTION 5: LOGIN INTERFACE (AUTHENTICATION LAYER)
+        */
+        .auth-container {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 30px; background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+        }
+
+        .auth-portal {
+            background: var(--e-max-card-dark);
+            width: 100%; max-width: 480px;
+            padding: 50px 40px; border-radius: var(--e-max-radius-lg);
+            border: 1px solid var(--e-max-border);
+            box-shadow: var(--e-max-shadow);
+            text-align: center;
+        }
+
+        .google-btn-auth {
+            margin-top: 40px; width: 100%;
+            padding: 20px; border-radius: var(--e-max-radius-md);
+            border: none; background: white; color: #000;
+            font-size: 18px; font-weight: 800; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            transition: var(--e-max-transition);
+        }
+
+        .google-btn-auth:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(255,255,255,0.1); }
+
+        /* SECTION 6: MASTER DASHBOARD (MAIN UI)
+        */
+        header.e-max-nav {
             position: absolute; top: 0; left: 0; right: 0;
-            z-index: 1000; padding: 25px;
+            height: 100px; padding: 0 25px; z-index: 500;
             display: flex; justify-content: space-between; align-items: center;
-            background: linear-gradient(to bottom, rgba(2,6,23,0.9), transparent);
+            pointer-events: none;
         }
 
-        .user-profile-trigger {
-            display: flex; align-items: center; gap: 12px;
-            background: var(--glass-bg); padding: 6px 16px 6px 8px;
-            border-radius: 50px; border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px); cursor: pointer;
-            transition: var(--transition-smooth);
+        .profile-pill {
+            pointer-events: auto; background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(15px); padding: 8px 20px 8px 10px;
+            border-radius: var(--e-max-radius-xl); border: 1px solid var(--e-max-border);
+            display: flex; align-items: center; gap: 12px; cursor: pointer;
         }
 
-        .user-profile-trigger:hover { background: rgba(255,255,255,0.08); border-color: var(--primary); }
-        .user-profile-trigger img { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--primary); }
+        .profile-pill img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--e-max-primary); }
 
-        .balance-pill {
-            background: var(--accent); color: white; padding: 10px 20px;
-            border-radius: 50px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
-            transition: var(--transition-smooth);
+        .wallet-pill {
+            pointer-events: auto; background: var(--e-max-success);
+            padding: 12px 25px; border-radius: var(--e-max-radius-xl);
+            font-weight: 900; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            cursor: pointer; transition: var(--e-max-transition);
         }
 
-        .balance-pill:active { transform: scale(0.9); }
+        .wallet-pill:active { transform: scale(0.9); }
 
-        /* Bottom Action Sheet */
-        .bottom-sheet {
-            background: var(--card-bg);
-            border-radius: 45px 45px 0 0;
-            padding: 35px 25px;
-            position: relative; z-index: 1001;
-            box-shadow: 0 -20px 50px rgba(0,0,0,0.5);
-            border-top: 1px solid rgba(255,255,255,0.05);
+        /* SECTION 7: MAPPING CORE
+        */
+        .map-wrapper { flex: 1; position: relative; background: #000; }
+        #e-max-master-map { height: 100%; width: 100%; z-index: 10; }
+
+        /* Custom Map Controls Overlay */
+        .map-overlay-tools {
+            position: absolute; right: 20px; top: 120px; z-index: 400;
+            display: flex; flex-direction: column; gap: 10px;
         }
 
-        .sheet-handle {
-            width: 50px; height: 5px; background: rgba(255,255,255,0.2);
-            border-radius: 10px; margin: -15px auto 25px;
+        .tool-btn {
+            width: 50px; height: 50px; background: var(--e-max-card-dark);
+            border: 1px solid var(--e-max-border); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; cursor: pointer; backdrop-filter: blur(10px);
         }
 
-        /* Form Inputs */
-        .input-wrapper {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 22px; padding: 18px 22px;
-            display: flex; align-items: center; gap: 15px;
-            margin-bottom: 15px; transition: var(--transition-smooth);
+        /* SECTION 8: ORDERING ENGINE UI
+        */
+        .order-sheet {
+            background: var(--e-max-card-dark);
+            border-radius: var(--e-max-radius-lg) var(--e-max-radius-lg) 0 0;
+            padding: 35px 25px 50px; border-top: 2px solid var(--e-max-border);
+            z-index: 600; box-shadow: 0 -20px 50px rgba(0,0,0,0.6);
         }
 
-        .input-wrapper:focus-within {
-            background: rgba(255,255,255,0.06);
-            border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        .input-group-titan {
+            background: var(--e-max-card-light);
+            border: 1px solid var(--e-max-border);
+            border-radius: 20px; padding: 20px 25px;
+            display: flex; align-items: center; gap: 18px;
+            margin-bottom: 20px; transition: var(--e-max-transition);
         }
 
-        .input-wrapper input {
+        .input-group-titan:focus-within { border-color: var(--e-max-primary); background: #26334d; }
+
+        .input-group-titan input {
             background: none; border: none; color: white;
-            flex: 1; font-size: 17px; font-weight: 500;
+            flex: 1; font-size: 18px; font-weight: 500;
         }
 
-        /* Buttons */
-        .btn-mega {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white; border: none; width: 100%; padding: 22px;
-            border-radius: 25px; font-size: 20px; font-weight: 900;
-            cursor: pointer; box-shadow: 0 15px 35px var(--primary-glow);
-            transition: var(--transition-smooth);
+        .btn-titan-main {
+            background: linear-gradient(135deg, var(--e-max-primary) 0%, var(--e-max-primary-dark) 100%);
+            color: white; border: none; padding: 24px;
+            border-radius: var(--e-max-radius-md); width: 100%;
+            font-size: 22px; font-weight: 900; cursor: pointer;
+            box-shadow: 0 15px 40px var(--e-max-primary-glow);
+            transition: var(--e-max-transition);
             display: flex; align-items: center; justify-content: center; gap: 15px;
         }
 
-        .btn-mega:hover { transform: translateY(-3px); box-shadow: 0 20px 45px var(--primary-glow); }
-        .btn-mega:active { transform: translateY(1px); }
-
-        /* ============================================================
-           SECTION 3: SPECIFIC SCREENS (Lines 351-600)
-           ============================================================ */
-
-        /* Login Screen Special Styles */
-        .auth-bg {
+        /* SECTION 9: RADAR & BIDDING INTERFACE
+        */
+        .radar-view {
             flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            background: radial-gradient(circle at top right, #1e1b4b 0%, #020617 100%);
-            padding: 40px; text-align: center;
+            align-items: center; justify-content: center; padding: 40px;
         }
 
-        /* Radar Scanning UI */
-        .radar-container {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 40px; text-align: center;
-        }
-
-        .sonar-wave {
-            width: 180px; height: 180px; border: 4px solid var(--primary);
+        .radar-core {
+            width: 220px; height: 220px; border: 2px solid var(--e-max-primary);
             border-radius: 50%; position: relative; margin-bottom: 60px;
         }
 
-        .sonar-wave::after, .sonar-wave::before {
-            content: ''; position: absolute; inset: -4px;
-            border: 4px solid var(--primary); border-radius: 50%;
-            animation: sonar-ping 2.5s infinite;
+        .radar-wave-effect {
+            position: absolute; inset: -2px; border: 2px solid var(--e-max-primary);
+            border-radius: 50%; animation: ripple 2.5s infinite;
         }
 
-        .sonar-wave::before { animation-delay: 1s; }
-
-        @keyframes sonar-ping {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(2.8); opacity: 0; }
-        }
-
-        /* Offer Cards */
-        .offer-card {
-            background: var(--glass-bg); border-radius: 28px;
-            padding: 22px; margin-bottom: 15px;
-            border-right: 6px solid var(--primary);
+        .bid-card-titan {
+            background: var(--e-max-card-light);
+            border-radius: var(--e-max-radius-md);
+            padding: 25px; margin-bottom: 15px;
+            border-right: 8px solid var(--e-max-primary);
             display: flex; justify-content: space-between; align-items: center;
-            animation: slide-right 0.5s ease forwards;
+            animation: fadeInUp 0.5s ease;
         }
 
-        @keyframes slide-right { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
-
-        /* Wallet & Admin Panels */
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(15px); z-index: 2000;
-            display: none; flex-direction: column; padding: 30px;
+        /* SECTION 10: MODAL SYSTEM (WALLET/CHAT)
+        */
+        .titan-modal {
+            position: fixed; inset: 0; background: var(--e-max-bg-black);
+            z-index: 2000; display: none; flex-direction: column;
+            padding: 40px 30px;
         }
 
-        .wallet-card-visual {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            height: 220px; border-radius: 35px; padding: 35px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-            margin-bottom: 30px; position: relative; overflow: hidden;
+        .wallet-card-fancy {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            height: 240px; border-radius: var(--e-max-radius-lg);
+            padding: 40px; display: flex; flex-direction: column;
+            justify-content: space-between; position: relative; overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
         }
 
-        /* ============================================================
-           SECTION 4: CHAT & NOTIFICATIONS (Lines 601-750)
-           ============================================================ */
-        
-        .chat-container {
-            flex: 1; overflow-y: auto; display: flex; flex-direction: column;
-            gap: 12px; padding: 10px;
+        /* SECTION 11: CHAT SYSTEM ENGINE
+        */
+        .chat-titan-body {
+            flex: 1; overflow-y: auto; padding: 20px 0;
+            display: flex; flex-direction: column; gap: 15px;
         }
 
-        .bubble {
-            padding: 14px 20px; border-radius: 22px; max-width: 85%;
-            font-size: 15px; position: relative;
-            line-height: 1.5; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        .msg-titan {
+            padding: 16px 24px; border-radius: 25px; max-width: 85%;
+            font-size: 16px; line-height: 1.6; position: relative;
         }
 
-        .bubble.me { background: var(--primary); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .bubble.him { background: var(--card-light); align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-titan.rider { background: var(--e-max-primary); align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-titan.driver { background: var(--e-max-card-light); align-self: flex-end; border-bottom-right-radius: 2px; }
 
-        .toast-system {
-            position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
-            z-index: 99999; pointer-events: none;
+        /* SECTION 12: TOAST & NOTIFICATIONS
+        */
+        .titan-toast {
+            position: fixed; top: 35px; left: 50%; transform: translateX(-50%);
+            background: var(--e-max-primary); color: white;
+            padding: 15px 40px; border-radius: 50px; font-weight: 800;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index: 99999;
+            display: none; animation: fadeInDown 0.4s;
         }
-
-        .toast-msg {
-            background: rgba(139, 92, 246, 0.95);
-            color: white; padding: 12px 30px; border-radius: 50px;
-            font-weight: 700; margin-bottom: 10px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            animation: toast-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes toast-pop { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
     </style>
 </head>
 <body>
 
-    <div id="loader" class="master-loader">
-        <div class="loader-content">
-            <div class="loader-logo">E-MAX</div>
-            <div style="margin-top:20px;" class="loader-ring">
-                <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--primary);"></i>
+    <div id="titan-toast" class="titan-toast"></div>
+
+    <div id="titan-splash" class="e-max-splash">
+        <div class="splash-branding">
+            <div class="titan-logo">E-MAX</div>
+            <div style="margin-top:20px;">
+                <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--e-max-primary)"></i>
             </div>
-            <p style="margin-top: 30px; letter-spacing: 5px; font-weight: 300;">INITIALIZING SYSTEM...</p>
+            <p style="margin-top:30px; letter-spacing: 5px; opacity:0.6; font-weight:300;">POWERED BY TITAN ENGINE v7</p>
         </div>
     </div>
 
-    <div id="toast-container" class="toast-system"></div>
-
-    <div id="scr-auth" class="screen">
-        <div class="auth-bg">
-            <div style="margin-bottom: 50px;">
-                <h1 style="font-size: 80px; font-weight: 900; letter-spacing: -2px; color: var(--primary);">E-MAX</h1>
-                <p style="font-size: 20px; font-weight: 300; opacity: 0.7;">INTELLIGENT RIDE SYSTEM</p>
-            </div>
-            
-            <div style="width: 100%; max-width: 350px;">
-                <button onclick="E_MAX.login()" class="btn-mega" style="background: white; color: black; box-shadow: none;">
-                    <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="24">
-                    الدخول بواسطة جوجل
-                </button>
-            </div>
-
-            <div style="margin-top: 100px; font-size: 13px; color: var(--text-dim);">
-                Alexandria Branch | v5.0.2 Build 2026<br>
-                Property of Eyad Ehab
+    <div id="scr-auth" class="system-screen">
+        <div class="auth-container">
+            <div class="auth-portal">
+                <h1 style="font-size: 55px; font-weight: 900; color: var(--e-max-primary);">E-MAX</h1>
+                <p style="color: var(--e-max-text-dim); margin-top: 10px;">نظام النقل الأكثر ذكاءً في الإسكندرية</p>
+                
+                <div style="margin-top: 40px; text-align: right;">
+                    <h3 style="margin-bottom: 20px;">ابدأ الآن</h3>
+                    <button class="google-btn-auth" onclick="E_MAX_ENGINE.auth.triggerLogin()">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="25">
+                        المتابعة باستخدام Google
+                    </button>
+                </div>
+                
+                <div style="margin-top: 60px; padding-top: 30px; border-top: 1px solid var(--e-max-border);">
+                    <p style="font-size: 13px; color: var(--e-max-text-muted);">عبر تسجيل الدخول، أنت توافق على شروط خدمة E-MAX 2026</p>
+                    <p style="font-size: 11px; margin-top: 10px; color: var(--e-max-primary);">Eyad Ehab Ibrahim © Alexandria Branch</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="scr-main" class="screen">
-        <header class="top-nav">
-            <div class="user-profile-trigger" onclick="E_MAX.toggleProfileMenu()">
-                <img id="u-avatar" src="https://via.placeholder.com/100">
-                <span id="u-display-name" style="font-weight: 700;">تحميل...</span>
+    <div id="scr-main" class="system-screen">
+        <header class="e-max-nav">
+            <div class="profile-pill" onclick="E_MAX_ENGINE.ui.showDevInfo()">
+                <img id="rider-pfp" src="https://via.placeholder.com/100">
+                <div style="display:flex; flex-direction:column;">
+                    <b id="rider-name" style="font-size:14px;">تحميل...</b>
+                    <small style="font-size:10px; color:var(--e-max-success)">حساب موثق</small>
+                </div>
             </div>
-            <div class="balance-pill" onclick="E_MAX.showWallet()">
-                <span id="u-balance">0</span> <small>ج.م</small>
+            <div class="wallet-pill" onclick="E_MAX_ENGINE.ui.toggleWallet(true)">
+                <span id="rider-balance">0.00</span> <small>ج.م</small>
             </div>
         </header>
 
-        <div id="map-box" style="flex: 1; position: relative;">
-            <div id="master-map" style="height: 100%; width: 100%;"></div>
+        <div class="map-wrapper">
+            <div id="e-max-master-map"></div>
             
-            <div id="trip-status-card" style="display: none; position: absolute; top: 110px; left: 20px; right: 20px; z-index: 1000;">
-                <div style="background: var(--card-bg); padding: 25px; border-radius: 30px; border: 1px solid var(--primary); box-shadow: 0 30px 60px rgba(0,0,0,0.5);">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="map-overlay-tools">
+                <div class="tool-btn" onclick="E_MAX_ENGINE.map.recenter()"><i class="fas fa-location-crosshairs"></i></div>
+                <div class="tool-btn" onclick="E_MAX_ENGINE.map.changeStyle()"><i class="fas fa-layer-group"></i></div>
+                <div class="tool-btn" onclick="E_MAX_ENGINE.ui.toggleChat(true)" id="chat-trigger-btn" style="display:none;"><i class="fas fa-comment-dots"></i></div>
+            </div>
+
+            <div id="active-trip-panel" style="display: none; position: absolute; top: 120px; left: 20px; right: 20px; z-index: 450;">
+                <div style="background: var(--e-max-card-dark); padding: 25px; border-radius: var(--e-max-radius-md); border: 1px solid var(--e-max-primary); box-shadow: var(--e-max-shadow);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div>
-                            <span id="trip-status-tag" style="background: var(--primary); font-size: 10px; padding: 4px 12px; border-radius: 50px;">في الطريق</span>
-                            <h2 id="active-driver-name" style="margin-top: 10px; font-size: 22px;">...</h2>
+                            <span style="background:var(--e-max-primary); font-size:10px; padding:3px 10px; border-radius:50px;">الرحلة مفعلة</span>
+                            <h3 id="active-driver-display" style="margin-top:8px;">كابتن...</h3>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 12px; opacity: 0.6;">التكلفة</div>
-                            <b id="active-trip-price" style="font-size: 24px; color: var(--warning);">0</b>
+                        <div style="text-align:center;">
+                            <div style="font-size:12px; opacity:0.6;">الحساب</div>
+                            <b id="active-price-display" style="font-size:22px; color:var(--e-max-warning);">0</b>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 12px; margin-top: 25px;">
-                        <button onclick="E_MAX.openChat()" class="btn-mega" style="padding: 12px; font-size: 16px; flex: 1;">
-                            <i class="fas fa-comment-alt"></i> دردشة
-                        </button>
-                        <a id="driver-call-link" href="#" class="btn-mega" style="padding: 12px; font-size: 16px; flex: 1; background: var(--accent);">
-                            <i class="fas fa-phone-alt"></i> اتصال
-                        </a>
+                    <div style="display:flex; gap:12px; margin-top:20px;">
+                        <button class="btn-titan-main" onclick="E_MAX_ENGINE.ui.toggleChat(true)" style="padding:12px; font-size:16px; flex:1;">دردشة</button>
+                        <a id="driver-call-btn" href="#" class="btn-titan-main" style="padding:12px; font-size:16px; flex:1; background:var(--e-max-success);">اتصال</a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="bottom-sheet">
-            <div class="sheet-handle"></div>
-            
-            <div class="input-wrapper">
-                <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i>
-                <input type="text" id="destination-input" placeholder="اكتب وجهتك الآن (مثلاً: سان ستيفانو)...">
+        <div class="order-sheet" id="main-order-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <h2 style="font-weight:900;">اطلب كابتن E-MAX</h2>
+                <div style="font-size:12px; color:var(--e-max-primary);">الإسكندرية، مصر</div>
             </div>
 
-            <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                <div class="input-wrapper" style="flex: 1; margin: 0;">
+            <div class="input-group-titan">
+                <i class="fas fa-map-pin" style="color:var(--e-max-primary); font-size:22px;"></i>
+                <input type="text" id="target-destination" placeholder="رايح فين النهاردة؟">
+            </div>
+
+            <div style="display:flex; gap:15px; margin-bottom:30px;">
+                <div class="input-group-titan" style="flex:1; margin:0; padding:15px 20px;">
                     <i class="fas fa-credit-card"></i>
-                    <select id="payment-method" style="background:none; border:none; color:white; width:100%; font-weight:700;">
-                        <option value="cash">كاش (نقداً)</option>
+                    <select id="payment-mode" style="background:none; border:none; color:white; width:100%; font-weight:700;">
+                        <option value="cash">نقداً (كاش)</option>
                         <option value="wallet">محفظة E-MAX</option>
                     </select>
                 </div>
-                <div class="input-wrapper" style="flex: 1; margin: 0;">
-                    <i class="fas fa-car"></i>
-                    <select id="ride-type" style="background:none; border:none; color:white; width:100%; font-weight:700;">
+                <div class="input-group-titan" style="flex:1; margin:0; padding:15px 20px;">
+                    <i class="fas fa-bolt"></i>
+                    <select id="car-class" style="background:none; border:none; color:white; width:100%; font-weight:700;">
                         <option value="eco">E-Eco (توفير)</option>
-                        <option value="pro">E-Pro (VIP)</option>
+                        <option value="plus">E-Plus (VIP)</option>
                     </select>
                 </div>
             </div>
 
-            <button onclick="E_MAX.requestRide()" class="btn-mega">
-                اطلب رحلة E-MAX الآن
-                <i class="fas fa-chevron-left"></i>
+            <button class="btn-titan-main" onclick="E_MAX_ENGINE.trip.initiateRequest()">
+                تأكيد الطلب الآن
+                <i class="fas fa-arrow-left"></i>
             </button>
         </div>
     </div>
 
-    <div id="scr-radar" class="screen">
-        <div class="radar-container">
-            <div class="sonar-wave">
-                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-satellite fa-3x" style="color: var(--primary);"></i>
+    <div id="scr-radar" class="system-screen">
+        <div class="radar-view">
+            <div class="radar-core">
+                <div class="radar-wave-effect"></div>
+                <div class="radar-wave-effect" style="animation-delay: 0.8s;"></div>
+                <div class="radar-wave-effect" style="animation-delay: 1.6s;"></div>
+                <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-satellite-dish fa-4x" style="color:var(--e-max-primary)"></i>
                 </div>
             </div>
             
-            <h1 style="font-weight: 900; margin-bottom: 10px;">جاري المزايدة...</h1>
-            <p style="color: var(--text-dim);">يتم الآن إرسال طلبك لأفضل الكباتن القريبين منك في الإسكندرية</p>
+            <h1 style="font-size:35px; font-weight:900;">جاري البحث عن كابتن...</h1>
+            <p style="color:var(--e-max-text-dim); margin-top:10px;">طلبك الآن متاح لجميع كباتن الإسكندرية النشطين</p>
             
-            <div id="bids-scroll-area" style="width: 100%; max-height: 45vh; overflow-y: auto; margin-top: 30px; padding: 10px;">
+            <div id="offers-stream" style="width:100%; max-height:40vh; overflow-y:auto; margin-top:40px; padding:10px;">
                 </div>
 
-            <button onclick="E_MAX.cancelRequest()" style="background: none; border: 1px solid var(--danger); color: var(--danger); padding: 18px 50px; border-radius: 20px; margin-top: 20px; font-weight: 800; cursor: pointer;">
-                إلغاء البحث
-            </button>
+            <button onclick="E_MAX_ENGINE.trip.abort()" style="background:none; border:1px solid var(--e-max-danger); color:var(--e-max-danger); padding:20px 60px; border-radius:20px; margin-top:30px; font-weight:800; cursor:pointer;">إلغاء الرحلة</button>
         </div>
     </div>
 
-    <div id="scr-wallet" class="modal-overlay">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <i class="fas fa-times fa-2x" onclick="E_MAX.closeModals()" style="cursor: pointer;"></i>
-            <h2 style="font-weight: 900;">إدارة المحفظة</h2>
+    <div id="modal-wallet" class="titan-modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px;">
+            <i class="fas fa-times fa-2x" onclick="E_MAX_ENGINE.ui.toggleWallet(false)" style="cursor:pointer;"></i>
+            <h2 style="font-weight:900;">إدارة الرصيد</h2>
         </div>
 
-        <div class="wallet-card-visual">
-            <div style="display: flex; justify-content: space-between;">
-                <i class="fas fa-microchip fa-2x"></i>
-                <h3 style="letter-spacing: 3px;">E-MAX CARD</h3>
+        <div class="wallet-card-fancy">
+            <div style="display:flex; justify-content:space-between;">
+                <div style="font-size:25px; font-weight:900; letter-spacing:2px;">E-MAX</div>
+                <i class="fas fa-wifi"></i>
             </div>
             <div>
-                <p style="font-size: 12px; opacity: 0.7;">الرصيد المتاح حالياً</p>
-                <h1 style="font-size: 50px; font-weight: 900;"><span id="w-balance-val">0.00</span> <small>ج.م</small></h1>
+                <small style="opacity:0.8;">الرصيد المتاح</small>
+                <h1 style="font-size:55px; font-weight:900;"><span id="w-balance-titan">0.00</span> <small style="font-size:20px;">ج.م</small></h1>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-                <p id="w-user-name">USER NAME</p>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/MasterCard_Logo.svg" width="50">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                <b id="w-holder-name">CLIENT NAME</b>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" width="60">
             </div>
         </div>
 
-        <div style="background: var(--glass-bg); padding: 30px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05);">
-            <h4 style="margin-bottom: 15px; color: var(--warning);">شحن الرصيد (فودافون كاش)</h4>
-            <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 20px;">قم بتحويل المبلغ للرقم 010XXXXXXXX ثم أرسل "رقم العملية" المكون من 12 رقم بالأسفل.</p>
+        <div style="margin-top:50px; background:var(--e-max-card-light); padding:30px; border-radius:var(--e-max-radius-md); border:1px solid var(--e-max-border);">
+            <h3 style="color:var(--e-max-warning); margin-bottom:15px;"><i class="fas fa-wallet"></i> شحن المحفظة (فودافون كاش)</h3>
+            <p style="font-size:14px; color:var(--e-max-text-dim); margin-bottom:25px;">قم بتحويل المبلغ المطلوب للرقم <b>010XXXXXXXX</b> ثم أدخل رقم العملية المكون من 12 رقم لتأكيد الشحن.</p>
             
-            <div class="input-wrapper">
-                <input type="number" id="deposit-ref" placeholder="اكتب رقم العملية هنا...">
+            <div class="input-group-titan">
+                <input type="number" id="transaction-ref" placeholder="رقم العملية (Reference Number)">
             </div>
-            <button onclick="E_MAX.submitDeposit()" class="btn-mega" style="padding: 15px; font-size: 16px;">تأكيد الإيداع</button>
+            <button class="btn-titan-main" onclick="E_MAX_ENGINE.wallet.processDeposit()" style="padding:18px; font-size:18px;">تأكيد الإيداع الآن</button>
         </div>
     </div>
 
-    <div id="scr-chat" class="modal-overlay">
-        <div style="display: flex; align-items: center; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--glass-bg);">
-            <i class="fas fa-chevron-right fa-xl" onclick="E_MAX.closeModals()"></i>
-            <div>
-                <b id="chat-with-name">الدردشة</b><br>
-                <small style="color: var(--accent);">متصل الآن</small>
+    <div id="modal-chat" class="titan-modal">
+        <div style="display:flex; align-items:center; gap:20px; padding-bottom:25px; border-bottom:1px solid var(--e-max-border);">
+            <i class="fas fa-chevron-right fa-xl" onclick="E_MAX_ENGINE.ui.toggleChat(false)" style="cursor:pointer;"></i>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:10px; height:10px; background:var(--e-max-success); border-radius:50%;"></div>
+                <b id="chat-partner-name" style="font-size:18px;">الدردشة</b>
             </div>
         </div>
 
-        <div id="chat-messages" class="chat-container">
+        <div id="chat-titan-feed" class="chat-titan-body">
             </div>
 
-        <div style="display: flex; gap: 12px; padding: 20px 0;">
-            <input type="text" id="chat-input-field" style="flex: 1; background: var(--glass-bg); border: none; padding: 18px; border-radius: 20px; color: white;" placeholder="اكتب رسالتك للكابتن...">
-            <button onclick="E_MAX.sendMessage()" style="background: var(--primary); border: none; width: 60px; border-radius: 20px; color: white;">
-                <i class="fas fa-paper-plane"></i>
-            </button>
+        <div style="display:flex; gap:15px; padding:30px 0;">
+            <input type="text" id="chat-input-msg" style="flex:1; background:var(--e-max-card-light); border:1px solid var(--e-max-border); padding:20px; border-radius:20px; color:white;" placeholder="اكتب رسالتك هنا...">
+            <button class="btn-titan-main" style="width:70px; border-radius:20px;" onclick="E_MAX_ENGINE.chat.send()"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
     <script>
-        /* ============================================================
-           SECTION 5: THE CORE ENGINE (Lines 751-1200+)
-           ============================================================ */
+        /* E-MAX TITAN CORE - v7.2.0
+           Author: Eyad Ehab Ibrahim
+        */
 
-        const FIREBASE_CONFIG = {
+        // 1. SYSTEM CONSTANTS & CONFIG
+        const FIREBASE_TITAN_CONFIG = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
+            projectId: "e-max-d7438"
         };
 
-        firebase.initializeApp(FIREBASE_CONFIG);
-        const DB = firebase.database();
-        const AUTH = firebase.auth();
+        // Initialize Global Services
+        firebase.initializeApp(FIREBASE_TITAN_CONFIG);
+        const TITAN_DB = firebase.database();
+        const TITAN_AUTH = firebase.auth();
 
-        const E_MAX = {
+        // 2. THE MASTER ENGINE OBJECT (OBJECT-ORIENTED)
+        const E_MAX_ENGINE = {
+            
+            // System State
             state: {
-                user: null,
-                userData: null,
-                map: null,
-                myMarker: null,
+                currentUser: null,
+                profileData: null,
+                masterMap: null,
+                userMarker: null,
                 driverMarker: null,
-                currentLoc: { lat: 31.2001, lng: 29.9187 },
-                activeRideId: null,
-                isSearching: false
+                activeLocation: { lat: 31.2001, lng: 29.9187 },
+                currentRideId: null,
+                mapStyle: 'dark',
+                isSystemReady: false
             },
 
-            // 1. System Boot
-            init() {
-                console.log("%c E-MAX SYSTEM ONLINE ", "background: #8b5cf6; color: white; font-weight: 900;");
+            // Boot Manager
+            boot() {
+                console.log("%c [E-MAX TITAN] %c System Boot Initiated...", "color: #8b5cf6; font-weight: 900;", "color: #fff;");
                 
-                AUTH.onAuthStateChanged(user => {
+                TITAN_AUTH.onAuthStateChanged(user => {
+                    // Artificial Delay for Splash Professionalism
                     setTimeout(() => {
-                        document.getElementById('loader').style.opacity = '0';
-                        setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+                        document.getElementById('titan-splash').classList.add('animate__animated', 'animate__fadeOut');
+                        setTimeout(() => document.getElementById('titan-splash').style.display = 'none', 1000);
                         
                         if (user) {
-                            this.state.user = user;
-                            this.syncUserData();
+                            this.state.currentUser = user;
+                            this.auth.syncProfile();
                         } else {
-                            this.switchScreen('scr-auth');
+                            this.ui.switchScreen('scr-auth');
                         }
-                    }, 2500);
+                    }, 3500);
                 });
             },
 
-            // 2. Auth Actions
-            login() {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                AUTH.signInWithPopup(provider).catch(err => this.notify("فشل تسجيل الدخول: " + err.message));
-            },
+            // 3. AUTHENTICATION MODULE
+            auth: {
+                triggerLogin() {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    TITAN_AUTH.signInWithPopup(provider).catch(err => E_MAX_ENGINE.ui.notify("Login Error: " + err.message));
+                },
 
-            // 3. Data Synchronization
-            syncUserData() {
-                const userRef = DB.ref('users/' + this.state.user.uid);
-                userRef.on('value', snap => {
-                    this.state.userData = snap.val();
-                    if (!this.state.userData) {
-                        userRef.set({
-                            name: this.state.user.displayName,
-                            email: this.state.user.email,
-                            photo: this.state.user.photoURL,
-                            balance: 0,
-                            created_at: Date.now(),
-                            status: 'active'
-                        });
-                    } else {
-                        this.refreshUI();
-                        this.switchScreen('scr-main');
-                        this.initMapEngine();
-                        this.monitorActiveRides();
-                    }
-                });
-            },
-
-            // 4. Map Engine (Leaflet)
-            initMapEngine() {
-                if (this.state.map) return;
-                
-                this.state.map = L.map('master-map', { zoomControl: false }).setView([this.state.currentLoc.lat, this.state.currentLoc.lng], 15);
-                
-                // Dark Mode Carto Tiles
-                L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: 'E-MAX Maps'
-                }).addTo(this.state.map);
-
-                // Watch Position
-                navigator.geolocation.watchPosition(pos => {
-                    this.state.currentLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    
-                    if (!this.state.myMarker) {
-                        this.state.myMarker = L.circleMarker([this.state.currentLoc.lat, this.state.currentLoc.lng], {
-                            radius: 12, color: '#8b5cf6', fillColor: '#8b5cf6', fillOpacity: 0.8
-                        }).addTo(this.state.map);
-                    } else {
-                        this.state.myMarker.setLatLng([this.state.currentLoc.lat, this.state.currentLoc.lng]);
-                    }
-                    this.state.map.panTo([this.state.currentLoc.lat, this.state.currentLoc.lng]);
-                }, err => console.error("GPS Error", err), { enableHighAccuracy: true });
-            },
-
-            // 5. Ride Operations
-            requestRide() {
-                const dest = document.getElementById('destination-input').value;
-                if (dest.length < 3) return this.notify("من فضلك أدخل وجهة صحيحة!");
-
-                this.state.isSearching = true;
-                this.state.activeRideId = DB.ref('rides').push().key;
-
-                DB.ref('rides/' + this.state.activeRideId).set({
-                    rider_id: this.state.user.uid,
-                    rider_name: this.state.userData.name,
-                    rider_photo: this.state.userData.photo,
-                    destination: dest,
-                    payment: document.getElementById('payment-method').value,
-                    car_type: document.getElementById('ride-type').value,
-                    status: 'searching',
-                    start_loc: this.state.currentLoc,
-                    timestamp: Date.now()
-                });
-
-                this.switchScreen('scr-radar');
-                this.startBiddingListener();
-            },
-
-            startBiddingListener() {
-                DB.ref(`rides/${this.state.activeRideId}/offers`).on('value', snap => {
-                    const container = document.getElementById('bids-scroll-area');
-                    container.innerHTML = "";
-                    
-                    if (!snap.exists()) {
-                        container.innerHTML = `<div style="opacity:0.5; padding:20px;">جاري إرسال الطلب للكباتن...</div>`;
-                        return;
-                    }
-
-                    snap.forEach(offerSnap => {
-                        const offer = offerSnap.val();
-                        const card = document.createElement('div');
-                        card.className = "offer-card";
-                        card.innerHTML = `
-                            <div>
-                                <b style="font-size:18px;">كابتن ${offer.driver_name}</b><br>
-                                <small style="color:var(--text-dim);"><i class="fas fa-star" style="color:var(--warning)"></i> 4.9 (2000 رحلة)</small>
-                            </div>
-                            <div style="text-align:center;">
-                                <h2 style="color:var(--accent);">${offer.price}</h2>
-                                <small>ج.م</small>
-                            </div>
-                            <button onclick="E_MAX.acceptOffer('${offerSnap.key}', ${offer.price}, '${offer.driver_id}', '${offer.driver_name}', '${offer.driver_phone}')" 
-                                style="background:var(--primary); border:none; color:white; padding:12px 20px; border-radius:15px; font-weight:800; cursor:pointer;">
-                                قبول
-                            </button>
-                        `;
-                        container.appendChild(card);
-                    });
-                });
-            },
-
-            acceptOffer(offerId, price, dId, dName, dPhone) {
-                DB.ref(`rides/${this.state.activeRideId}`).update({
-                    status: 'accepted',
-                    driver_id: dId,
-                    driver_name: dName,
-                    driver_phone: dPhone,
-                    final_price: price
-                }).then(() => {
-                    this.switchScreen('scr-main');
-                    this.notify("تم تأكيد الرحلة! الكابتن في الطريق.");
-                });
-            },
-
-            // 6. Real-time Monitoring
-            monitorActiveRides() {
-                DB.ref('rides').orderByChild('rider_id').equalTo(this.state.user.uid).on('value', snap => {
-                    snap.forEach(child => {
-                        const ride = child.val();
-                        if (ride.status === 'accepted') {
-                            this.state.activeRideId = child.key;
-                            this.updateTripUI(ride);
-                            if (ride.driver_loc) this.syncDriverMarker(ride.driver_loc);
-                            this.listenToMessages();
-                        } else if (ride.status === 'completed') {
-                            this.notify("وصلت بالسلامة!");
-                            this.resetSystem();
+                syncProfile() {
+                    const ref = TITAN_DB.ref('users/' + E_MAX_ENGINE.state.currentUser.uid);
+                    ref.on('value', snap => {
+                        E_MAX_ENGINE.state.profileData = snap.val();
+                        
+                        if (!E_MAX_ENGINE.state.profileData) {
+                            // Initial Setup for New Titans
+                            ref.set({
+                                name: E_MAX_ENGINE.state.currentUser.displayName,
+                                photo: E_MAX_ENGINE.state.currentUser.photoURL,
+                                balance: 0,
+                                rating: 5.0,
+                                joinDate: Date.now(),
+                                type: 'rider'
+                            });
+                        } else {
+                            E_MAX_ENGINE.ui.refreshInterface();
+                            E_MAX_ENGINE.ui.switchScreen('scr-main');
+                            E_MAX_ENGINE.map.initialize();
+                            E_MAX_ENGINE.trip.watchActiveRides();
                         }
                     });
-                });
-            },
-
-            updateTripUI(ride) {
-                document.getElementById('trip-status-card').style.display = 'block';
-                document.getElementById('active-driver-name').innerText = "كابتن " + ride.driver_name;
-                document.getElementById('active-trip-price').innerText = ride.final_price + " ج.م";
-                document.getElementById('driver-call-link').href = "tel:" + ride.driver_phone;
-                document.getElementById('chat-with-name').innerText = "دردشة مع " + ride.driver_name;
-            },
-
-            syncDriverMarker(loc) {
-                const icon = L.icon({
-                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png',
-                    iconSize: [45, 45]
-                });
-                if (!this.state.driverMarker) {
-                    this.state.driverMarker = L.marker([loc.lat, loc.lng], { icon: icon }).addTo(this.state.map);
-                } else {
-                    this.state.driverMarker.setLatLng([loc.lat, loc.lng]);
                 }
             },
 
-            // 7. Chat & Messaging
-            sendMessage() {
-                const msg = document.getElementById('chat-input-field').value;
-                if (!msg) return;
-                
-                DB.ref(`chats/${this.state.activeRideId}`).push({
-                    sender: 'rider',
-                    text: msg,
-                    time: Date.now()
-                });
-                document.getElementById('chat-input-field').value = "";
+            // 4. MAPPING MODULE
+            map: {
+                initialize() {
+                    if (E_MAX_ENGINE.state.masterMap) return;
+
+                    E_MAX_ENGINE.state.masterMap = L.map('e-max-master-map', {
+                        zoomControl: false,
+                        attributionControl: false
+                    }).setView([E_MAX_ENGINE.state.activeLocation.lat, E_MAX_ENGINE.state.activeLocation.lng], 16);
+
+                    this.applyStyle();
+                    this.startGPS();
+                },
+
+                applyStyle() {
+                    const style = E_MAX_ENGINE.state.mapStyle === 'dark' 
+                        ? 'https://{s}.tile.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+                        
+                    L.tileLayer(style).addTo(E_MAX_ENGINE.state.masterMap);
+                },
+
+                startGPS() {
+                    if (!navigator.geolocation) return;
+
+                    navigator.geolocation.watchPosition(pos => {
+                        E_MAX_ENGINE.state.activeLocation = {
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude
+                        };
+
+                        if (!E_MAX_ENGINE.state.userMarker) {
+                            E_MAX_ENGINE.state.userMarker = L.circleMarker(
+                                [E_MAX_ENGINE.state.activeLocation.lat, E_MAX_ENGINE.state.activeLocation.lng], 
+                                { radius: 14, color: '#8b5cf6', weight: 4, fillColor: '#8b5cf6', fillOpacity: 0.9 }
+                            ).addTo(E_MAX_ENGINE.state.masterMap);
+                        } else {
+                            E_MAX_ENGINE.state.userMarker.setLatLng([E_MAX_ENGINE.state.activeLocation.lat, E_MAX_ENGINE.state.activeLocation.lng]);
+                        }
+
+                        E_MAX_ENGINE.state.masterMap.panTo([E_MAX_ENGINE.state.activeLocation.lat, E_MAX_ENGINE.state.activeLocation.lng]);
+                    }, null, { enableHighAccuracy: true });
+                },
+
+                recenter() {
+                    E_MAX_ENGINE.state.masterMap.flyTo([E_MAX_ENGINE.state.activeLocation.lat, E_MAX_ENGINE.state.activeLocation.lng], 17);
+                },
+
+                changeStyle() {
+                    E_MAX_ENGINE.state.mapStyle = E_MAX_ENGINE.state.mapStyle === 'dark' ? 'light' : 'dark';
+                    this.applyStyle();
+                    E_MAX_ENGINE.ui.notify("تم تغيير نمط الخريطة");
+                }
             },
 
-            listenToMessages() {
-                DB.ref(`chats/${this.state.activeRideId}`).off();
-                DB.ref(`chats/${this.state.activeRideId}`).on('child_added', snap => {
-                    const m = snap.val();
-                    const container = document.getElementById('chat-messages');
-                    const div = document.createElement('div');
-                    div.className = `bubble ${m.sender === 'rider' ? 'me' : 'him'}`;
-                    div.innerText = m.text;
-                    container.appendChild(div);
-                    container.scrollTop = container.scrollHeight;
-                });
+            // 5. TRIP & ORDERING MODULE
+            trip: {
+                initiateRequest() {
+                    const dest = document.getElementById('target-destination').value;
+                    if (dest.length < 3) return E_MAX_ENGINE.ui.notify("من فضلك حدد وجهة صحيحة");
+
+                    E_MAX_ENGINE.state.currentRideId = TITAN_DB.ref('rides').push().key;
+
+                    const ridePayload = {
+                        rider_id: E_MAX_ENGINE.state.currentUser.uid,
+                        rider_name: E_MAX_ENGINE.state.profileData.name,
+                        rider_photo: E_MAX_ENGINE.state.profileData.photo,
+                        destination: dest,
+                        payment: document.getElementById('payment-mode').value,
+                        car_class: document.getElementById('car-class').value,
+                        status: 'searching',
+                        origin: E_MAX_ENGINE.state.activeLocation,
+                        timestamp: Date.now()
+                    };
+
+                    TITAN_DB.ref('rides/' + E_MAX_ENGINE.state.currentRideId).set(ridePayload);
+                    E_MAX_ENGINE.ui.switchScreen('scr-radar');
+                    this.listenForBids();
+                },
+
+                listenForBids() {
+                    TITAN_DB.ref(`rides/${E_MAX_ENGINE.state.currentRideId}/offers`).on('value', snap => {
+                        const stream = document.getElementById('offers-stream');
+                        stream.innerHTML = "";
+
+                        if (!snap.exists()) {
+                            stream.innerHTML = `<div style="text-align:center; opacity:0.5;">بانتظار عروض الكباتن...</div>`;
+                            return;
+                        }
+
+                        snap.forEach(offerSnap => {
+                            const o = offerSnap.val();
+                            const card = document.createElement('div');
+                            card.className = "bid-card-titan";
+                            card.innerHTML = `
+                                <div>
+                                    <b style="font-size:20px;">كابتن ${o.driver_name}</b><br>
+                                    <small style="color:var(--e-max-warning);"><i class="fas fa-star"></i> 4.9 (ممتاز)</small>
+                                </div>
+                                <div style="text-align:center; flex:1;">
+                                    <h2 style="color:var(--e-max-success);">${o.price}</h2>
+                                    <small>ج.م</small>
+                                </div>
+                                <button onclick="E_MAX_ENGINE.trip.acceptBid('${offerSnap.key}', ${o.price}, '${o.driver_id}', '${o.driver_name}', '${o.driver_phone}')" 
+                                    style="background:var(--e-max-primary); border:none; color:white; padding:15px 25px; border-radius:15px; font-weight:900; cursor:pointer;">
+                                    قبول
+                                </button>
+                            `;
+                            stream.appendChild(card);
+                        });
+                    });
+                },
+
+                acceptBid(bidKey, price, dId, dName, dPhone) {
+                    TITAN_DB.ref(`rides/${E_MAX_ENGINE.state.currentRideId}`).update({
+                        status: 'accepted',
+                        driver_id: dId,
+                        driver_name: dName,
+                        driver_phone: dPhone,
+                        final_price: price
+                    }).then(() => {
+                        E_MAX_ENGINE.ui.switchScreen('scr-main');
+                        E_MAX_ENGINE.ui.notify("تم تأكيد الرحلة بنجاح!");
+                    });
+                },
+
+                watchActiveRides() {
+                    TITAN_DB.ref('rides').orderByChild('rider_id').equalTo(E_MAX_ENGINE.state.currentUser.uid).on('value', snap => {
+                        snap.forEach(child => {
+                            const ride = child.val();
+                            if (ride.status === 'accepted') {
+                                E_MAX_ENGINE.state.currentRideId = child.key;
+                                E_MAX_ENGINE.ui.showTripOverlay(ride);
+                                if (ride.driver_loc) E_MAX_ENGINE.trip.updateDriverMarker(ride.driver_loc);
+                                E_MAX_ENGINE.chat.sync();
+                            } else if (ride.status === 'completed') {
+                                E_MAX_ENGINE.ui.notify("وصلت بالسلامة وجهتك!");
+                                location.reload();
+                            }
+                        });
+                    });
+                },
+
+                updateDriverMarker(loc) {
+                    const carIcon = L.icon({
+                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png',
+                        iconSize: [45, 45]
+                    });
+
+                    if (!E_MAX_ENGINE.state.driverMarker) {
+                        E_MAX_ENGINE.state.driverMarker = L.marker([loc.lat, loc.lng], { icon: carIcon }).addTo(E_MAX_ENGINE.state.masterMap);
+                    } else {
+                        E_MAX_ENGINE.state.driverMarker.setLatLng([loc.lat, loc.lng]);
+                    }
+                },
+
+                abort() {
+                    if (confirm("هل أنت متأكد من إلغاء الرحلة؟")) {
+                        TITAN_DB.ref(`rides/${E_MAX_ENGINE.state.currentRideId}`).remove();
+                        location.reload();
+                    }
+                }
             },
 
-            // 8. Wallet Logic
-            submitDeposit() {
-                const ref = document.getElementById('deposit-ref').value;
-                if (ref.length < 10) return this.notify("رقم العملية غير مكتمل!");
-                
-                DB.ref('admin_requests/deposits').push({
-                    uid: this.state.user.uid,
-                    user_name: this.state.userData.name,
-                    reference: ref,
-                    amount: "قيد المراجعة",
-                    timestamp: Date.now()
-                });
-                
-                this.notify("تم إرسال الطلب للأدمن إياد بنجاح.");
-                this.closeModals();
+            // 6. WALLET MODULE
+            wallet: {
+                processDeposit() {
+                    const refNum = document.getElementById('transaction-ref').value;
+                    if (refNum.length < 10) return E_MAX_ENGINE.ui.notify("رقم العملية غير صحيح");
+
+                    TITAN_DB.ref('admin_ops/deposits').push({
+                        uid: E_MAX_ENGINE.state.currentUser.uid,
+                        user: E_MAX_ENGINE.state.profileData.name,
+                        ref: refNum,
+                        status: 'pending',
+                        timestamp: Date.now()
+                    });
+
+                    E_MAX_ENGINE.ui.notify("تم إرسال الطلب للأدمن إياد للمراجعة");
+                    E_MAX_ENGINE.ui.toggleWallet(false);
+                }
             },
 
-            // 9. Utility Functions
-            switchScreen(id) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById(id).classList.add('active');
+            // 7. CHAT MODULE
+            chat: {
+                send() {
+                    const msg = document.getElementById('chat-input-msg').value;
+                    if (!msg) return;
+
+                    TITAN_DB.ref(`chats/${E_MAX_ENGINE.state.currentRideId}`).push({
+                        sender: 'rider',
+                        text: msg,
+                        time: Date.now()
+                    });
+                    document.getElementById('chat-input-msg').value = "";
+                },
+
+                sync() {
+                    TITAN_DB.ref(`chats/${E_MAX_ENGINE.state.currentRideId}`).off();
+                    TITAN_DB.ref(`chats/${E_MAX_ENGINE.state.currentRideId}`).on('child_added', snap => {
+                        const m = snap.val();
+                        const feed = document.getElementById('chat-titan-feed');
+                        const div = document.createElement('div');
+                        div.className = `msg-titan ${m.sender === 'rider' ? 'rider' : 'driver'}`;
+                        div.innerText = m.text;
+                        feed.appendChild(div);
+                        feed.scrollTop = feed.scrollHeight;
+                        
+                        if (m.sender === 'driver') E_MAX_ENGINE.ui.notify("رسالة جديدة من الكابتن");
+                    });
+                }
             },
 
-            notify(msg) {
-                const container = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                toast.className = "toast-msg";
-                toast.innerText = msg;
-                container.appendChild(toast);
-                setTimeout(() => toast.remove(), 4000);
-            },
+            // 8. UI CONTROLLER (UX MODULE)
+            ui: {
+                switchScreen(id) {
+                    document.querySelectorAll('.system-screen').forEach(s => s.classList.remove('active-layer'));
+                    document.getElementById(id).classList.add('active-layer');
+                },
 
-            refreshUI() {
-                document.getElementById('u-display-name').innerText = this.state.userData.name;
-                document.getElementById('u-avatar').src = this.state.userData.photo;
-                document.getElementById('u-balance').innerText = this.state.userData.balance;
-                document.getElementById('w-balance-val').innerText = this.state.userData.balance;
-                document.getElementById('w-user-name').innerText = this.state.userData.name.toUpperCase();
-            },
+                refreshInterface() {
+                    document.getElementById('rider-name').innerText = E_MAX_ENGINE.state.profileData.name;
+                    document.getElementById('rider-pfp').src = E_MAX_ENGINE.state.profileData.photo;
+                    document.getElementById('rider-balance').innerText = E_MAX_ENGINE.state.profileData.balance.toFixed(2);
+                    document.getElementById('w-balance-titan').innerText = E_MAX_ENGINE.state.profileData.balance.toFixed(2);
+                    document.getElementById('w-holder-name').innerText = E_MAX_ENGINE.state.profileData.name.toUpperCase();
+                },
 
-            showWallet() { document.getElementById('scr-wallet').style.display = 'flex'; },
-            openChat() { document.getElementById('scr-chat').style.display = 'flex'; },
-            closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); },
-            cancelRequest() { if(confirm("إلغاء الطلب؟")) { DB.ref(`rides/${this.state.activeRideId}`).remove(); location.reload(); } },
-            resetSystem() { location.reload(); }
+                notify(text) {
+                    const t = document.getElementById('titan-toast');
+                    t.innerText = text; t.style.display = 'block';
+                    setTimeout(() => t.style.display = 'none', 4000);
+                },
+
+                toggleWallet(show) { document.getElementById('modal-wallet').style.display = show ? 'flex' : 'none'; },
+                toggleChat(show) { document.getElementById('modal-chat').style.display = show ? 'flex' : 'none'; },
+
+                showTripOverlay(ride) {
+                    document.getElementById('active-trip-panel').style.display = 'block';
+                    document.getElementById('main-order-panel').style.display = 'none';
+                    document.getElementById('active-driver-display').innerText = "كابتن " + ride.driver_name;
+                    document.getElementById('active-price-display').innerText = ride.final_price + " ج.م";
+                    document.getElementById('driver-call-btn').href = "tel:" + ride.driver_phone;
+                    document.getElementById('chat-partner-name').innerText = "دردشة: كابتن " + ride.driver_name;
+                    document.getElementById('chat-trigger-btn').style.display = 'flex';
+                },
+
+                showDevInfo() {
+                    E_MAX_ENGINE.ui.notify("E-MAX TITAN v7.2 | Dev: Eyad Ehab");
+                }
+            }
         };
 
-        // Initialize E-MAX
-        E_MAX.init();
+        // FINAL STEP: FIRE THE ENGINE
+        E_MAX_ENGINE.boot();
 
     </script>
 </body>
