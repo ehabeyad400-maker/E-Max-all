@@ -3,436 +3,731 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-MAX Rider | Super Edition 2026</title>
+    <title>E-MAX | The Ultimate Enterprise System 2026</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
-        /* =========================================
-           1. نظام التصميم (CSS - الاستايل الكامل)
-           ========================================= */
+        /* ============================================================
+           SECTION 1: GLOBAL CSS VARIABLES & RESET (Lines 1-150)
+           ============================================================ */
         :root {
-            --p: #8b5cf6; --p-glow: rgba(139, 92, 246, 0.4);
-            --bg: #030712; --card: #111827; --card-light: #1f2937;
-            --t: #f9fafb; --t-dim: #9ca3af;
-            --success: #10b981; --danger: #ef4444; --gold: #fbbf24;
+            --primary: #8b5cf6;
+            --primary-dark: #6d28d9;
+            --primary-glow: rgba(139, 92, 246, 0.5);
+            --secondary: #1e293b;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark-bg: #020617;
+            --card-bg: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--t); height: 100vh; overflow: hidden; }
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+            outline: none; -webkit-tap-highlight-color: transparent;
+        }
 
-        /* الأنيميشنات */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+        body, html {
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            height: 100vh; width: 100vw;
+            overflow: hidden;
+            scroll-behavior: smooth;
+        }
 
-        /* الهيكل الرئيسي */
-        .screen { position: fixed; inset: 0; display: none; flex-direction: column; z-index: 100; background: var(--bg); }
-        .screen.active { display: flex; animation: fadeIn 0.5s ease; }
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--dark-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        /* شاشة الدخول */
-        #scr-login { background: radial-gradient(circle at top, #1e1b4b 0%, #030712 100%); align-items: center; justify-content: center; padding: 20px; }
-        .login-box { background: var(--card); padding: 40px 30px; border-radius: 35px; width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--card-light); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        .google-btn { background: white; color: black; border: none; padding: 18px; border-radius: 18px; width: 100%; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; margin-top: 30px; font-size: 16px; }
-
-        /* الخريطة والواجهة */
-        #map-box { flex: 1; position: relative; }
-        #main-map { height: 100%; width: 100%; }
-
-        header { position: absolute; top: 0; left: 0; right: 0; z-index: 500; padding: 20px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
-        header * { pointer-events: auto; }
-        .u-pill { background: rgba(17, 24, 39, 0.8); backdrop-filter: blur(10px); padding: 8px 15px; border-radius: 50px; border: 1px solid var(--card-light); display: flex; align-items: center; gap: 10px; }
-        .u-pill img { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--p); }
-
-        .wallet-btn { background: var(--success); color: white; padding: 10px 20px; border-radius: 50px; font-weight: 900; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
-
-        /* صندوق الطلب السفلي */
-        .order-panel { background: var(--card); border-radius: 40px 40px 0 0; padding: 30px; border-top: 1px solid var(--card-light); box-shadow: 0 -10px 40px rgba(0,0,0,0.4); }
-        .inp-group { background: var(--card-light); border-radius: 20px; padding: 15px 20px; display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border: 1px solid transparent; }
-        .inp-group:focus-within { border-color: var(--p); }
-        .inp-group input { background: none; border: none; color: white; flex: 1; font-size: 18px; outline: none; }
-        .btn-main { background: var(--p); color: white; border: none; padding: 20px; border-radius: 22px; width: 100%; font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 20px var(--p-glow); }
-
-        /* الرادار */
-        #scr-radar { align-items: center; justify-content: center; text-align: center; padding: 20px; }
-        .radar-box { width: 150px; height: 150px; border: 3px solid var(--p); border-radius: 50%; position: relative; margin-bottom: 40px; }
-        .radar-pulse { position: absolute; inset: -3px; border: 3px solid var(--p); border-radius: 50%; animation: pulse 2s infinite; }
-        .offers-cont { width: 100%; max-height: 40vh; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
-        .offer-card { background: var(--card-light); padding: 20px; border-radius: 25px; display: flex; justify-content: space-between; align-items: center; border-right: 5px solid var(--p); }
-
-        /* المحفظة والدردشة */
-        .modal { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: none; flex-direction: column; padding: 30px; }
-        .wallet-card { background: linear-gradient(135deg, var(--p) 0%, #4338ca 100%); padding: 40px 20px; border-radius: 30px; text-align: center; margin-bottom: 30px; }
+        /* ============================================================
+           SECTION 2: UI COMPONENTS (Lines 151-350)
+           ============================================================ */
         
-        #chat-view { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 20px 0; }
-        .msg { padding: 12px 18px; border-radius: 20px; max-width: 80%; line-height: 1.5; }
-        .msg.me { background: var(--p); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .msg.him { background: var(--card-light); align-self: flex-end; border-bottom-right-radius: 2px; }
+        /* Master Loader */
+        .master-loader {
+            position: fixed; inset: 0; z-index: 10000;
+            background: var(--dark-bg);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: var(--transition-smooth);
+        }
 
-        /* توست التنبيهات */
-        .toast { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); background: var(--p); padding: 10px 25px; border-radius: 50px; font-weight: bold; z-index: 5000; display: none; }
+        .loader-content { text-align: center; }
+        .loader-logo {
+            font-size: 60px; font-weight: 900; color: var(--primary);
+            text-shadow: 0 0 40px var(--primary-glow);
+            animation: pulse-logo 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-logo {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        /* Screen Management */
+        .screen {
+            position: fixed; inset: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column;
+            background: var(--dark-bg); z-index: 100;
+        }
+
+        .screen.active { display: flex; animation: screen-in 0.6s ease forwards; }
+
+        @keyframes screen-in {
+            from { transform: scale(1.1); opacity: 0; filter: blur(10px); }
+            to { transform: scale(1); opacity: 1; filter: blur(0); }
+        }
+
+        /* Navigation Components */
+        .top-nav {
+            position: absolute; top: 0; left: 0; right: 0;
+            z-index: 1000; padding: 25px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(to bottom, rgba(2,6,23,0.9), transparent);
+        }
+
+        .user-profile-trigger {
+            display: flex; align-items: center; gap: 12px;
+            background: var(--glass-bg); padding: 6px 16px 6px 8px;
+            border-radius: 50px; border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px); cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .user-profile-trigger:hover { background: rgba(255,255,255,0.08); border-color: var(--primary); }
+        .user-profile-trigger img { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--primary); }
+
+        .balance-pill {
+            background: var(--accent); color: white; padding: 10px 20px;
+            border-radius: 50px; font-weight: 800; cursor: pointer;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            transition: var(--transition-smooth);
+        }
+
+        .balance-pill:active { transform: scale(0.9); }
+
+        /* Bottom Action Sheet */
+        .bottom-sheet {
+            background: var(--card-bg);
+            border-radius: 45px 45px 0 0;
+            padding: 35px 25px;
+            position: relative; z-index: 1001;
+            box-shadow: 0 -20px 50px rgba(0,0,0,0.5);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .sheet-handle {
+            width: 50px; height: 5px; background: rgba(255,255,255,0.2);
+            border-radius: 10px; margin: -15px auto 25px;
+        }
+
+        /* Form Inputs */
+        .input-wrapper {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 22px; padding: 18px 22px;
+            display: flex; align-items: center; gap: 15px;
+            margin-bottom: 15px; transition: var(--transition-smooth);
+        }
+
+        .input-wrapper:focus-within {
+            background: rgba(255,255,255,0.06);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .input-wrapper input {
+            background: none; border: none; color: white;
+            flex: 1; font-size: 17px; font-weight: 500;
+        }
+
+        /* Buttons */
+        .btn-mega {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; border: none; width: 100%; padding: 22px;
+            border-radius: 25px; font-size: 20px; font-weight: 900;
+            cursor: pointer; box-shadow: 0 15px 35px var(--primary-glow);
+            transition: var(--transition-smooth);
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+        }
+
+        .btn-mega:hover { transform: translateY(-3px); box-shadow: 0 20px 45px var(--primary-glow); }
+        .btn-mega:active { transform: translateY(1px); }
+
+        /* ============================================================
+           SECTION 3: SPECIFIC SCREENS (Lines 351-600)
+           ============================================================ */
+
+        /* Login Screen Special Styles */
+        .auth-bg {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: radial-gradient(circle at top right, #1e1b4b 0%, #020617 100%);
+            padding: 40px; text-align: center;
+        }
+
+        /* Radar Scanning UI */
+        .radar-container {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 40px; text-align: center;
+        }
+
+        .sonar-wave {
+            width: 180px; height: 180px; border: 4px solid var(--primary);
+            border-radius: 50%; position: relative; margin-bottom: 60px;
+        }
+
+        .sonar-wave::after, .sonar-wave::before {
+            content: ''; position: absolute; inset: -4px;
+            border: 4px solid var(--primary); border-radius: 50%;
+            animation: sonar-ping 2.5s infinite;
+        }
+
+        .sonar-wave::before { animation-delay: 1s; }
+
+        @keyframes sonar-ping {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.8); opacity: 0; }
+        }
+
+        /* Offer Cards */
+        .offer-card {
+            background: var(--glass-bg); border-radius: 28px;
+            padding: 22px; margin-bottom: 15px;
+            border-right: 6px solid var(--primary);
+            display: flex; justify-content: space-between; align-items: center;
+            animation: slide-right 0.5s ease forwards;
+        }
+
+        @keyframes slide-right { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Wallet & Admin Panels */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(15px); z-index: 2000;
+            display: none; flex-direction: column; padding: 30px;
+        }
+
+        .wallet-card-visual {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            height: 220px; border-radius: 35px; padding: 35px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            margin-bottom: 30px; position: relative; overflow: hidden;
+        }
+
+        /* ============================================================
+           SECTION 4: CHAT & NOTIFICATIONS (Lines 601-750)
+           ============================================================ */
+        
+        .chat-container {
+            flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+            gap: 12px; padding: 10px;
+        }
+
+        .bubble {
+            padding: 14px 20px; border-radius: 22px; max-width: 85%;
+            font-size: 15px; position: relative;
+            line-height: 1.5; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .bubble.me { background: var(--primary); align-self: flex-start; border-bottom-left-radius: 2px; }
+        .bubble.him { background: var(--card-light); align-self: flex-end; border-bottom-right-radius: 2px; }
+
+        .toast-system {
+            position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 99999; pointer-events: none;
+        }
+
+        .toast-msg {
+            background: rgba(139, 92, 246, 0.95);
+            color: white; padding: 12px 30px; border-radius: 50px;
+            font-weight: 700; margin-bottom: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            animation: toast-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes toast-pop { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
     </style>
 </head>
 <body>
 
-    <div id="toast" class="toast"></div>
+    <div id="loader" class="master-loader">
+        <div class="loader-content">
+            <div class="loader-logo">E-MAX</div>
+            <div style="margin-top:20px;" class="loader-ring">
+                <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--primary);"></i>
+            </div>
+            <p style="margin-top: 30px; letter-spacing: 5px; font-weight: 300;">INITIALIZING SYSTEM...</p>
+        </div>
+    </div>
 
-    <div id="scr-login" class="screen active">
-        <div class="login-box">
-            <h1 style="font-size: 50px; font-weight: 900; color: var(--p); margin-bottom: 10px;">E-MAX</h1>
-            <p style="color: var(--t-dim);">أهلاً بك في مستقبل النقل بالإسكندرية</p>
-            <button class="google-btn" onclick="core.login()">
-                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="20">
-                الدخول عبر حساب جوجل
-            </button>
-            <p style="font-size: 11px; color: var(--t-dim); margin-top: 30px;">بواسطة إياد إيهاب إبراهيم - 2026</p>
+    <div id="toast-container" class="toast-system"></div>
+
+    <div id="scr-auth" class="screen">
+        <div class="auth-bg">
+            <div style="margin-bottom: 50px;">
+                <h1 style="font-size: 80px; font-weight: 900; letter-spacing: -2px; color: var(--primary);">E-MAX</h1>
+                <p style="font-size: 20px; font-weight: 300; opacity: 0.7;">INTELLIGENT RIDE SYSTEM</p>
+            </div>
+            
+            <div style="width: 100%; max-width: 350px;">
+                <button onclick="E_MAX.login()" class="btn-mega" style="background: white; color: black; box-shadow: none;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="24">
+                    الدخول بواسطة جوجل
+                </button>
+            </div>
+
+            <div style="margin-top: 100px; font-size: 13px; color: var(--text-dim);">
+                Alexandria Branch | v5.0.2 Build 2026<br>
+                Property of Eyad Ehab
+            </div>
         </div>
     </div>
 
     <div id="scr-main" class="screen">
-        <header>
-            <div class="u-pill">
-                <img id="u-photo" src="">
-                <span id="u-name" style="font-size: 14px; font-weight: bold;">...</span>
+        <header class="top-nav">
+            <div class="user-profile-trigger" onclick="E_MAX.toggleProfileMenu()">
+                <img id="u-avatar" src="https://via.placeholder.com/100">
+                <span id="u-display-name" style="font-weight: 700;">تحميل...</span>
             </div>
-            <div class="wallet-btn" onclick="core.openWallet()">
-                <span id="u-balance">0</span> ج.م
+            <div class="balance-pill" onclick="E_MAX.showWallet()">
+                <span id="u-balance">0</span> <small>ج.م</small>
             </div>
         </header>
 
-        <div id="map-box">
-            <div id="main-map"></div>
+        <div id="map-box" style="flex: 1; position: relative;">
+            <div id="master-map" style="height: 100%; width: 100%;"></div>
             
-            <div id="active-ride-bar" style="display: none; position: absolute; top: 100px; left: 20px; right: 20px; z-index: 600; background: var(--card); padding: 20px; border-radius: 25px; border: 1px solid var(--p); box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <b style="color: var(--p); font-size: 12px;">الكابتن في الطريق...</b>
-                        <div id="act-driver" style="font-size: 18px; font-weight: 900;">...</div>
+            <div id="trip-status-card" style="display: none; position: absolute; top: 110px; left: 20px; right: 20px; z-index: 1000;">
+                <div style="background: var(--card-bg); padding: 25px; border-radius: 30px; border: 1px solid var(--primary); box-shadow: 0 30px 60px rgba(0,0,0,0.5);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <span id="trip-status-tag" style="background: var(--primary); font-size: 10px; padding: 4px 12px; border-radius: 50px;">في الطريق</span>
+                            <h2 id="active-driver-name" style="margin-top: 10px; font-size: 22px;">...</h2>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 12px; opacity: 0.6;">التكلفة</div>
+                            <b id="active-trip-price" style="font-size: 24px; color: var(--warning);">0</b>
+                        </div>
                     </div>
-                    <div style="background: var(--card-light); padding: 10px; border-radius: 15px; text-align: center;">
-                        <div style="font-size: 10px;">الحساب</div>
-                        <b id="act-fare" style="color: var(--gold); font-size: 18px;">0 ج.م</b>
+                    <div style="display: flex; gap: 12px; margin-top: 25px;">
+                        <button onclick="E_MAX.openChat()" class="btn-mega" style="padding: 12px; font-size: 16px; flex: 1;">
+                            <i class="fas fa-comment-alt"></i> دردشة
+                        </button>
+                        <a id="driver-call-link" href="#" class="btn-mega" style="padding: 12px; font-size: 16px; flex: 1; background: var(--accent);">
+                            <i class="fas fa-phone-alt"></i> اتصال
+                        </a>
                     </div>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button onclick="core.openChat()" style="flex: 1; background: var(--p); border: none; padding: 12px; border-radius: 12px; color: white; font-weight: bold;">💬 دردشة</button>
-                    <a id="act-call" href="#" style="flex: 1; background: var(--success); border: none; padding: 12px; border-radius: 12px; color: white; font-weight: bold; text-align: center; text-decoration: none;">📞 اتصال</a>
                 </div>
             </div>
         </div>
 
-        <div class="order-panel">
-            <div class="inp-group">
-                <span>📍</span>
-                <input type="text" id="dest-input" placeholder="رايح فين النهاردة؟">
+        <div class="bottom-sheet">
+            <div class="sheet-handle"></div>
+            
+            <div class="input-wrapper">
+                <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i>
+                <input type="text" id="destination-input" placeholder="اكتب وجهتك الآن (مثلاً: سان ستيفانو)...">
             </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <div class="inp-group" style="flex: 1; margin: 0;">
-                    <span>💳</span>
-                    <select id="pay-select" style="background:none; border:none; color:white; width: 100%; font-weight: bold;">
-                        <option value="cash">كاش</option>
-                        <option value="wallet">المحفظة</option>
+
+            <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                <div class="input-wrapper" style="flex: 1; margin: 0;">
+                    <i class="fas fa-credit-card"></i>
+                    <select id="payment-method" style="background:none; border:none; color:white; width:100%; font-weight:700;">
+                        <option value="cash">كاش (نقداً)</option>
+                        <option value="wallet">محفظة E-MAX</option>
                     </select>
                 </div>
-                <div class="inp-group" style="flex: 1; margin: 0;">
-                    <span>🚕</span>
-                    <select id="car-select" style="background:none; border:none; color:white; width: 100%; font-weight: bold;">
-                        <option value="standard">عادي</option>
-                        <option value="premium">برو (VIP)</option>
+                <div class="input-wrapper" style="flex: 1; margin: 0;">
+                    <i class="fas fa-car"></i>
+                    <select id="ride-type" style="background:none; border:none; color:white; width:100%; font-weight:700;">
+                        <option value="eco">E-Eco (توفير)</option>
+                        <option value="pro">E-Pro (VIP)</option>
                     </select>
                 </div>
             </div>
-            <button class="btn-main" onclick="core.startSearch()">اطلب الآن</button>
+
+            <button onclick="E_MAX.requestRide()" class="btn-mega">
+                اطلب رحلة E-MAX الآن
+                <i class="fas fa-chevron-left"></i>
+            </button>
         </div>
     </div>
 
     <div id="scr-radar" class="screen">
-        <div class="radar-box">
-            <div class="radar-pulse"></div>
-            <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 30px; color: var(--p);">E</div>
-        </div>
-        <h2 style="font-weight: 900;">جاري إرسال طلبك...</h2>
-        <p style="color: var(--t-dim); margin-bottom: 30px;">نبحث عن أفضل كابتن متاح حولك الآن</p>
-        
-        <div id="offers-list" class="offers-cont">
+        <div class="radar-container">
+            <div class="sonar-wave">
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-satellite fa-3x" style="color: var(--primary);"></i>
+                </div>
             </div>
+            
+            <h1 style="font-weight: 900; margin-bottom: 10px;">جاري المزايدة...</h1>
+            <p style="color: var(--text-dim);">يتم الآن إرسال طلبك لأفضل الكباتن القريبين منك في الإسكندرية</p>
+            
+            <div id="bids-scroll-area" style="width: 100%; max-height: 45vh; overflow-y: auto; margin-top: 30px; padding: 10px;">
+                </div>
 
-        <button onclick="core.cancelSearch()" style="background: none; border: 1px solid var(--danger); color: var(--danger); padding: 15px 40px; border-radius: 15px; margin-top: 30px; font-weight: bold;">إلغاء الطلب</button>
+            <button onclick="E_MAX.cancelRequest()" style="background: none; border: 1px solid var(--danger); color: var(--danger); padding: 18px 50px; border-radius: 20px; margin-top: 20px; font-weight: 800; cursor: pointer;">
+                إلغاء البحث
+            </button>
+        </div>
     </div>
 
-    <div id="scr-wallet" class="modal">
+    <div id="scr-wallet" class="modal-overlay">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <button onclick="core.closeWallet()" style="background: none; border: none; color: white; font-size: 30px;">✕</button>
-            <h2 style="font-weight: 900;">محفظتي</h2>
+            <i class="fas fa-times fa-2x" onclick="E_MAX.closeModals()" style="cursor: pointer;"></i>
+            <h2 style="font-weight: 900;">إدارة المحفظة</h2>
         </div>
 
-        <div class="wallet-card">
-            <p style="opacity: 0.8; font-size: 14px;">الرصيد المتاح</p>
-            <h1 style="font-size: 55px; font-weight: 900;"><span id="w-balance">0</span> <small style="font-size: 20px;">ج.م</small></h1>
-        </div>
-
-        <div style="background: var(--card-light); padding: 25px; border-radius: 25px;">
-            <h3 style="margin-bottom: 10px; color: var(--gold);">شحن رصيد (فودافون كاش)</h3>
-            <p style="font-size: 13px; color: var(--t-dim); margin-bottom: 20px;">حول المبلغ لرقمنا: <b>010XXXXXXXX</b><br>ثم اكتب رقم العملية هنا لتأكيد الشحن.</p>
-            <div class="inp-group">
-                <input type="text" id="w-ref" placeholder="رقم العملية المكون من 12 رقم">
+        <div class="wallet-card-visual">
+            <div style="display: flex; justify-content: space-between;">
+                <i class="fas fa-microchip fa-2x"></i>
+                <h3 style="letter-spacing: 3px;">E-MAX CARD</h3>
             </div>
-            <button onclick="core.submitDeposit()" class="btn-main" style="padding: 15px; font-size: 16px;">إرسال للأدمن</button>
+            <div>
+                <p style="font-size: 12px; opacity: 0.7;">الرصيد المتاح حالياً</p>
+                <h1 style="font-size: 50px; font-weight: 900;"><span id="w-balance-val">0.00</span> <small>ج.م</small></h1>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <p id="w-user-name">USER NAME</p>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/MasterCard_Logo.svg" width="50">
+            </div>
+        </div>
+
+        <div style="background: var(--glass-bg); padding: 30px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05);">
+            <h4 style="margin-bottom: 15px; color: var(--warning);">شحن الرصيد (فودافون كاش)</h4>
+            <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 20px;">قم بتحويل المبلغ للرقم 010XXXXXXXX ثم أرسل "رقم العملية" المكون من 12 رقم بالأسفل.</p>
+            
+            <div class="input-wrapper">
+                <input type="number" id="deposit-ref" placeholder="اكتب رقم العملية هنا...">
+            </div>
+            <button onclick="E_MAX.submitDeposit()" class="btn-mega" style="padding: 15px; font-size: 16px;">تأكيد الإيداع</button>
         </div>
     </div>
 
-    <div id="scr-chat" class="modal">
-        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid var(--card-light); padding-bottom: 15px;">
-            <button onclick="core.closeChat()" style="background: none; border: none; color: var(--p); font-size: 24px;">✕</button>
-            <b id="chat-driver-name">الدردشة</b>
+    <div id="scr-chat" class="modal-overlay">
+        <div style="display: flex; align-items: center; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--glass-bg);">
+            <i class="fas fa-chevron-right fa-xl" onclick="E_MAX.closeModals()"></i>
+            <div>
+                <b id="chat-with-name">الدردشة</b><br>
+                <small style="color: var(--accent);">متصل الآن</small>
+            </div>
         </div>
-        <div id="chat-view"></div>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="chat-input" style="flex: 1; background: var(--card-light); border: none; padding: 15px; border-radius: 15px; color: white;" placeholder="اكتب رسالة...">
-            <button onclick="core.sendMsg()" style="background: var(--p); border: none; padding: 15px 25px; border-radius: 15px; color: white; font-weight: bold;">إرسال</button>
-        </div>
-    </div>
 
-    <div id="scr-rate" class="screen" style="align-items: center; justify-content: center; text-align: center; padding: 30px;">
-        <div style="font-size: 100px;">⭐</div>
-        <h1 style="font-weight: 900; margin: 20px 0;">وصلت بالسلامة!</h1>
-        <p style="color: var(--t-dim); margin-bottom: 40px;">رأيك يهمنا في تحسين كباتن E-MAX</p>
-        <div style="display: flex; gap: 15px; font-size: 40px; margin-bottom: 40px;">
-            <span onclick="core.finishRating(5)">⭐</span>
-            <span onclick="core.finishRating(5)">⭐</span>
-            <span onclick="core.finishRating(5)">⭐</span>
-            <span onclick="core.finishRating(5)">⭐</span>
-            <span onclick="core.finishRating(5)">⭐</span>
+        <div id="chat-messages" class="chat-container">
+            </div>
+
+        <div style="display: flex; gap: 12px; padding: 20px 0;">
+            <input type="text" id="chat-input-field" style="flex: 1; background: var(--glass-bg); border: none; padding: 18px; border-radius: 20px; color: white;" placeholder="اكتب رسالتك للكابتن...">
+            <button onclick="E_MAX.sendMessage()" style="background: var(--primary); border: none; width: 60px; border-radius: 20px; color: white;">
+                <i class="fas fa-paper-plane"></i>
+            </button>
         </div>
-        <button onclick="location.reload()" class="btn-main">العودة للرئيسية</button>
     </div>
 
     <script>
-        /* =========================================
-           2. المحرك البرمجي (JS - المنطق الكامل)
-           ========================================= */
+        /* ============================================================
+           SECTION 5: THE CORE ENGINE (Lines 751-1200+)
+           ============================================================ */
 
-        const fbConfig = {
+        const FIREBASE_CONFIG = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
         };
 
-        firebase.initializeApp(fbConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const DB = firebase.database();
+        const AUTH = firebase.auth();
 
-        const core = {
-            user: null, userData: null, map: null,
-            meMark: null, drMark: null,
-            loc: { lat: 31.2, lng: 29.9 },
-            rideId: null,
+        const E_MAX = {
+            state: {
+                user: null,
+                userData: null,
+                map: null,
+                myMarker: null,
+                driverMarker: null,
+                currentLoc: { lat: 31.2001, lng: 29.9187 },
+                activeRideId: null,
+                isSearching: false
+            },
 
+            // 1. System Boot
             init() {
-                auth.onAuthStateChanged(u => {
-                    if (u) {
-                        this.user = u;
-                        this.syncProfile();
-                    } else {
-                        this.showScr('scr-login');
-                    }
+                console.log("%c E-MAX SYSTEM ONLINE ", "background: #8b5cf6; color: white; font-weight: 900;");
+                
+                AUTH.onAuthStateChanged(user => {
+                    setTimeout(() => {
+                        document.getElementById('loader').style.opacity = '0';
+                        setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+                        
+                        if (user) {
+                            this.state.user = user;
+                            this.syncUserData();
+                        } else {
+                            this.switchScreen('scr-auth');
+                        }
+                    }, 2500);
                 });
             },
 
+            // 2. Auth Actions
             login() {
-                const p = new firebase.auth.GoogleAuthProvider();
-                auth.signInWithPopup(p);
+                const provider = new firebase.auth.GoogleAuthProvider();
+                AUTH.signInWithPopup(provider).catch(err => this.notify("فشل تسجيل الدخول: " + err.message));
             },
 
-            syncProfile() {
-                db.ref('users/' + this.user.uid).on('value', snap => {
-                    this.userData = snap.val();
-                    if (!this.userData) {
-                        db.ref('users/' + this.user.uid).set({
-                            name: this.user.displayName,
-                            photo: this.user.photoURL,
+            // 3. Data Synchronization
+            syncUserData() {
+                const userRef = DB.ref('users/' + this.state.user.uid);
+                userRef.on('value', snap => {
+                    this.state.userData = snap.val();
+                    if (!this.state.userData) {
+                        userRef.set({
+                            name: this.state.user.displayName,
+                            email: this.state.user.email,
+                            photo: this.state.user.photoURL,
                             balance: 0,
-                            trips: 0
+                            created_at: Date.now(),
+                            status: 'active'
                         });
                     } else {
-                        this.updateUI();
-                        this.showScr('scr-main');
-                        this.initMap();
-                        this.watchRides();
+                        this.refreshUI();
+                        this.switchScreen('scr-main');
+                        this.initMapEngine();
+                        this.monitorActiveRides();
                     }
                 });
             },
 
-            updateUI() {
-                document.getElementById('u-name').innerText = this.userData.name;
-                document.getElementById('u-photo').src = this.userData.photo;
-                document.getElementById('u-balance').innerText = this.userData.balance;
-                document.getElementById('w-balance').innerText = this.userData.balance;
-            },
+            // 4. Map Engine (Leaflet)
+            initMapEngine() {
+                if (this.state.map) return;
+                
+                this.state.map = L.map('master-map', { zoomControl: false }).setView([this.state.currentLoc.lat, this.state.currentLoc.lng], 15);
+                
+                // Dark Mode Carto Tiles
+                L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: 'E-MAX Maps'
+                }).addTo(this.state.map);
 
-            initMap() {
-                if (this.map) return;
-                this.map = L.map('main-map', { zoomControl: false }).setView([this.loc.lat, this.loc.lng], 15);
-                L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.map);
-
-                navigator.geolocation.watchPosition(p => {
-                    this.loc = { lat: p.coords.latitude, lng: p.coords.longitude };
-                    if (!this.meMark) {
-                        this.meMark = L.circleMarker([this.loc.lat, this.loc.lng], { radius: 10, color: '#8b5cf6', fillOpacity: 1 }).addTo(this.map);
-                    } else {
-                        this.meMark.setLatLng([this.loc.lat, this.loc.lng]);
-                    }
-                    this.map.panTo([this.loc.lat, this.loc.lng]);
-                }, null, { enableHighAccuracy: true });
-            },
-
-            startSearch() {
-                const dest = document.getElementById('dest-input').value;
-                if (!dest) return this.notify("حدد وجهتك يا بطل!");
-
-                this.rideId = db.ref('rides').push().key;
-                db.ref('rides/' + this.rideId).set({
-                    riderId: this.user.uid,
-                    riderName: this.userData.name,
-                    riderPhoto: this.userData.photo,
-                    destination: dest,
-                    status: 'searching',
-                    payBy: document.getElementById('pay-select').value,
-                    carType: document.getElementById('car-select').value,
-                    riderLoc: this.loc,
-                    time: Date.now()
-                });
-
-                this.showScr('scr-radar');
-                this.listenOffers();
-            },
-
-            listenOffers() {
-                db.ref(`rides/${this.rideId}/offers`).on('value', snap => {
-                    const cont = document.getElementById('offers-list');
-                    cont.innerHTML = "";
-                    if (!snap.exists()) cont.innerHTML = "<p style='opacity:0.5'>بانتظار رد الكباتن...</p>";
+                // Watch Position
+                navigator.geolocation.watchPosition(pos => {
+                    this.state.currentLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     
-                    snap.forEach(child => {
-                        const o = child.val();
+                    if (!this.state.myMarker) {
+                        this.state.myMarker = L.circleMarker([this.state.currentLoc.lat, this.state.currentLoc.lng], {
+                            radius: 12, color: '#8b5cf6', fillColor: '#8b5cf6', fillOpacity: 0.8
+                        }).addTo(this.state.map);
+                    } else {
+                        this.state.myMarker.setLatLng([this.state.currentLoc.lat, this.state.currentLoc.lng]);
+                    }
+                    this.state.map.panTo([this.state.currentLoc.lat, this.state.currentLoc.lng]);
+                }, err => console.error("GPS Error", err), { enableHighAccuracy: true });
+            },
+
+            // 5. Ride Operations
+            requestRide() {
+                const dest = document.getElementById('destination-input').value;
+                if (dest.length < 3) return this.notify("من فضلك أدخل وجهة صحيحة!");
+
+                this.state.isSearching = true;
+                this.state.activeRideId = DB.ref('rides').push().key;
+
+                DB.ref('rides/' + this.state.activeRideId).set({
+                    rider_id: this.state.user.uid,
+                    rider_name: this.state.userData.name,
+                    rider_photo: this.state.userData.photo,
+                    destination: dest,
+                    payment: document.getElementById('payment-method').value,
+                    car_type: document.getElementById('ride-type').value,
+                    status: 'searching',
+                    start_loc: this.state.currentLoc,
+                    timestamp: Date.now()
+                });
+
+                this.switchScreen('scr-radar');
+                this.startBiddingListener();
+            },
+
+            startBiddingListener() {
+                DB.ref(`rides/${this.state.activeRideId}/offers`).on('value', snap => {
+                    const container = document.getElementById('bids-scroll-area');
+                    container.innerHTML = "";
+                    
+                    if (!snap.exists()) {
+                        container.innerHTML = `<div style="opacity:0.5; padding:20px;">جاري إرسال الطلب للكباتن...</div>`;
+                        return;
+                    }
+
+                    snap.forEach(offerSnap => {
+                        const offer = offerSnap.val();
                         const card = document.createElement('div');
                         card.className = "offer-card";
                         card.innerHTML = `
-                            <div><b>كابتن ${o.driverName}</b><br><small>تويوتا كورولا | ⭐ 4.9</small></div>
-                            <div style="text-align:center;"><b style="color:var(--success); font-size:20px;">${o.offerPrice}</b><br><small>ج.م</small></div>
-                            <button onclick="core.acceptOffer('${child.key}', ${o.offerPrice}, '${o.driverId}', '${o.driverName}', '${o.driverPhone}')" style="background:var(--p); border:none; color:white; padding:10px 15px; border-radius:12px; font-weight:bold;">قبول</button>
+                            <div>
+                                <b style="font-size:18px;">كابتن ${offer.driver_name}</b><br>
+                                <small style="color:var(--text-dim);"><i class="fas fa-star" style="color:var(--warning)"></i> 4.9 (2000 رحلة)</small>
+                            </div>
+                            <div style="text-align:center;">
+                                <h2 style="color:var(--accent);">${offer.price}</h2>
+                                <small>ج.م</small>
+                            </div>
+                            <button onclick="E_MAX.acceptOffer('${offerSnap.key}', ${offer.price}, '${offer.driver_id}', '${offer.driver_name}', '${offer.driver_phone}')" 
+                                style="background:var(--primary); border:none; color:white; padding:12px 20px; border-radius:15px; font-weight:800; cursor:pointer;">
+                                قبول
+                            </button>
                         `;
-                        cont.appendChild(card);
+                        container.appendChild(card);
                     });
                 });
             },
 
-            acceptOffer(key, price, dId, dName, dPhone) {
-                db.ref(`rides/${this.rideId}`).update({
+            acceptOffer(offerId, price, dId, dName, dPhone) {
+                DB.ref(`rides/${this.state.activeRideId}`).update({
                     status: 'accepted',
-                    driverId: dId,
-                    driverName: dName,
-                    driverPhone: dPhone,
-                    finalPrice: price
+                    driver_id: dId,
+                    driver_name: dName,
+                    driver_phone: dPhone,
+                    final_price: price
                 }).then(() => {
-                    this.showScr('scr-main');
-                    this.notify("تم قبول العرض! الكابتن في الطريق");
+                    this.switchScreen('scr-main');
+                    this.notify("تم تأكيد الرحلة! الكابتن في الطريق.");
                 });
             },
 
-            watchRides() {
-                db.ref('rides').orderByChild('riderId').equalTo(this.user.uid).on('value', snap => {
+            // 6. Real-time Monitoring
+            monitorActiveRides() {
+                DB.ref('rides').orderByChild('rider_id').equalTo(this.state.user.uid).on('value', snap => {
                     snap.forEach(child => {
-                        const r = child.val();
-                        if (r.status === 'accepted') {
-                            this.rideId = child.key;
-                            this.updateRideUI(r);
-                            if (r.driverLoc) this.updateDriverMarker(r.driverLoc);
-                            this.syncChat();
-                        } else if (r.status === 'completed') {
-                            this.showScr('scr-rate');
+                        const ride = child.val();
+                        if (ride.status === 'accepted') {
+                            this.state.activeRideId = child.key;
+                            this.updateTripUI(ride);
+                            if (ride.driver_loc) this.syncDriverMarker(ride.driver_loc);
+                            this.listenToMessages();
+                        } else if (ride.status === 'completed') {
+                            this.notify("وصلت بالسلامة!");
+                            this.resetSystem();
                         }
                     });
                 });
             },
 
-            updateRideUI(r) {
-                document.getElementById('active-ride-bar').style.display = 'block';
-                document.querySelector('.order-panel').style.display = 'none';
-                document.getElementById('act-driver').innerText = r.driverName;
-                document.getElementById('act-fare').innerText = r.finalPrice + " ج.م";
-                document.getElementById('act-call').href = "tel:" + r.driverPhone;
-                document.getElementById('chat-driver-name').innerText = "دردشة مع " + r.driverName;
+            updateTripUI(ride) {
+                document.getElementById('trip-status-card').style.display = 'block';
+                document.getElementById('active-driver-name').innerText = "كابتن " + ride.driver_name;
+                document.getElementById('active-trip-price').innerText = ride.final_price + " ج.م";
+                document.getElementById('driver-call-link').href = "tel:" + ride.driver_phone;
+                document.getElementById('chat-with-name').innerText = "دردشة مع " + ride.driver_name;
             },
 
-            updateDriverMarker(loc) {
-                const icon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png', iconSize: [40, 40] });
-                if (!this.drMark) {
-                    this.drMark = L.marker([loc.lat, loc.lng], { icon: icon }).addTo(this.map);
+            syncDriverMarker(loc) {
+                const icon = L.icon({
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png',
+                    iconSize: [45, 45]
+                });
+                if (!this.state.driverMarker) {
+                    this.state.driverMarker = L.marker([loc.lat, loc.lng], { icon: icon }).addTo(this.state.map);
                 } else {
-                    this.drMark.setLatLng([loc.lat, loc.lng]);
+                    this.state.driverMarker.setLatLng([loc.lat, loc.lng]);
                 }
             },
 
-            sendMsg() {
-                const val = document.getElementById('chat-input').value;
-                if (!val) return;
-                db.ref(`chats/${this.rideId}`).push({ sender: 'me', text: val, time: Date.now() });
-                document.getElementById('chat-input').value = "";
+            // 7. Chat & Messaging
+            sendMessage() {
+                const msg = document.getElementById('chat-input-field').value;
+                if (!msg) return;
+                
+                DB.ref(`chats/${this.state.activeRideId}`).push({
+                    sender: 'rider',
+                    text: msg,
+                    time: Date.now()
+                });
+                document.getElementById('chat-input-field').value = "";
             },
 
-            syncChat() {
-                db.ref(`chats/${this.rideId}`).on('child_added', snap => {
+            listenToMessages() {
+                DB.ref(`chats/${this.state.activeRideId}`).off();
+                DB.ref(`chats/${this.state.activeRideId}`).on('child_added', snap => {
                     const m = snap.val();
-                    const view = document.getElementById('chat-view');
-                    const d = document.createElement('div');
-                    d.className = `msg ${m.sender === 'me' ? 'me' : 'him'}`;
-                    d.innerText = m.text;
-                    view.appendChild(d);
-                    view.scrollTop = view.scrollHeight;
+                    const container = document.getElementById('chat-messages');
+                    const div = document.createElement('div');
+                    div.className = `bubble ${m.sender === 'rider' ? 'me' : 'him'}`;
+                    div.innerText = m.text;
+                    container.appendChild(div);
+                    container.scrollTop = container.scrollHeight;
                 });
             },
 
+            // 8. Wallet Logic
             submitDeposit() {
-                const ref = document.getElementById('w-ref').value;
-                if (ref.length < 5) return this.notify("رقم عملية غير صحيح!");
-                db.ref('admin_notices/deposits').push({ uid: this.user.uid, name: this.userData.name, ref: ref });
-                this.notify("تم الإرسال للأدمن إياد!");
-                this.closeWallet();
+                const ref = document.getElementById('deposit-ref').value;
+                if (ref.length < 10) return this.notify("رقم العملية غير مكتمل!");
+                
+                DB.ref('admin_requests/deposits').push({
+                    uid: this.state.user.uid,
+                    user_name: this.state.userData.name,
+                    reference: ref,
+                    amount: "قيد المراجعة",
+                    timestamp: Date.now()
+                });
+                
+                this.notify("تم إرسال الطلب للأدمن إياد بنجاح.");
+                this.closeModals();
             },
 
-            showScr(id) {
+            // 9. Utility Functions
+            switchScreen(id) {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById(id).classList.add('active');
             },
 
-            openWallet() { document.getElementById('scr-wallet').style.display = 'flex'; },
-            closeWallet() { document.getElementById('scr-wallet').style.display = 'none'; },
+            notify(msg) {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = "toast-msg";
+                toast.innerText = msg;
+                container.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+            },
+
+            refreshUI() {
+                document.getElementById('u-display-name').innerText = this.state.userData.name;
+                document.getElementById('u-avatar').src = this.state.userData.photo;
+                document.getElementById('u-balance').innerText = this.state.userData.balance;
+                document.getElementById('w-balance-val').innerText = this.state.userData.balance;
+                document.getElementById('w-user-name').innerText = this.state.userData.name.toUpperCase();
+            },
+
+            showWallet() { document.getElementById('scr-wallet').style.display = 'flex'; },
             openChat() { document.getElementById('scr-chat').style.display = 'flex'; },
-            closeChat() { document.getElementById('scr-chat').style.display = 'none'; },
-            
-            notify(txt) {
-                const t = document.getElementById('toast');
-                t.innerText = txt; t.style.display = 'block';
-                setTimeout(() => t.style.display = 'none', 3000);
-            },
-
-            cancelSearch() {
-                db.ref(`rides/${this.rideId}`).remove();
-                location.reload();
-            },
-
-            finishRating(s) {
-                db.ref(`rides/${this.rideId}`).remove();
-                location.reload();
-            }
+            closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); },
+            cancelRequest() { if(confirm("إلغاء الطلب؟")) { DB.ref(`rides/${this.state.activeRideId}`).remove(); location.reload(); } },
+            resetSystem() { location.reload(); }
         };
 
-        core.init();
+        // Initialize E-MAX
+        E_MAX.init();
+
     </script>
 </body>
 </html>
