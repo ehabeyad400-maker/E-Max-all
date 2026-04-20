@@ -8,7 +8,51 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
+    <script>  // تعديل وظيفة استقبال الرحلات في تطبيق السائق
+function listenForRides() {
+    rtdb.ref('rides').on('value', snap => {
+        snap.forEach(child => {
+            const r = child.val();
+            
+            // السائق بيشوف الرحلة اللي حالتها "searching"
+            if(r.status === 'searching') {
+                // منع تكرار العرض لنفس الرحلة
+                if(document.getElementById('ride-' + child.key)) return;
+
+                // إظهار تفاصيل الرحلة للسائق (منين لفين)
+                const rideCard = `
+                    <div id="ride-${child.key}" class="card" style="margin-top:10px; border-right: 5px solid var(--blue);">
+                        <p>📍 <b>من:</b> موقع الراكب الحالي</p>
+                        <p>🏁 <b>إلى:</b> ${r.destination}</p>
+                        <p style="color:var(--gold)">💰 طريقة الدفع: ${r.payMethod === 'wallet' ? 'محفظة' : 'كاش'}</p>
+                        <input type="number" id="price-${child.key}" class="input-box" placeholder="دخل عرض سعرك ج.م">
+                        <button class="btn btn-blue" onclick="sendOffer('${child.key}')">إرسال عرض السعر 🚀</button>
+                    </div>
+                `;
+                document.getElementById('status-msg').innerHTML = "طلبات رحلات متاحة حولك 👇";
+                document.getElementById('main-app').insertAdjacentHTML('beforeend', rideCard);
+            }
+        });
+    });
+}
+
+// وظيفة إرسال العرض (بدل قبول الرحلة فوراً)
+function sendOffer(rideId) {
+    const price = document.getElementById('price-' + rideId).value;
+    if(!price) return alert("لازم تحدد سعر الأول!");
+
+    // إرسال العرض في قائمة العروض الخاصة بالرحلة دي
+    rtdb.ref('rides/' + rideId + '/offers/' + dUid).set({
+        driverId: dUid,
+        driverName: driverData.name,
+        driverPhone: driverData.phone,
+        offerPrice: Number(price),
+        driverLoc: myLoc // الإحداثيات الحالية للسائق
+    }).then(() => {
+        alert("تم إرسال عرضك للراكب، في انتظار موافقته...");
+        document.getElementById('ride-' + rideId).innerHTML = "<p>⏳ في انتظار رد الراكب على عرضك...</p>";
+    });
+} </script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
