@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-MAX Rider | النسخة الاحترافية</title>
+    <title>E-MAX Rider MEGA PRO | نسخة المليون سطر</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -11,571 +11,408 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
+        /* نظام الألوان المتطور */
         :root {
-            --p: #6366f1; --p-dark: #4338ca; --s: #10b981;
-            --bg: #0b0f1a; --surface: #161b2c; --surface-light: #23293f;
-            --t-main: #ffffff; --t-dim: #94a3b8; --danger: #f43f5e;
-            --gold: #fbbf24; --shadow: 0 10px 30px rgba(0,0,0,0.5);
+            --primary: #8b5cf6; --secondary: #3b82f6; --success: #22c55e;
+            --danger: #ef4444; --warning: #f59e0b; --dark: #020617;
+            --card-bg: #1e293b; --glass: rgba(255, 255, 255, 0.05);
+            --text-light: #f1f5f9; --text-muted: #94a3b8;
         }
 
-        * { 
-            box-sizing: border-box; font-family: 'Cairo', sans-serif;
-            -webkit-tap-highlight-color: transparent; outline: none;
+        /* تنسيقات الهيكل الأساسي */
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body, html { margin: 0; padding: 0; background: var(--dark); color: var(--text-light); height: 100vh; overflow: hidden; }
+
+        /* شاشات التطبيق */
+        .page { position: fixed; inset: 0; display: none; flex-direction: column; z-index: 100; background: var(--dark); }
+        .page-active { display: flex; animation: slideIn 0.5s ease forwards; }
+        @keyframes slideIn { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* شاشة تسجيل الدخول المتطورة */
+        .login-hero { height: 40vh; background: linear-gradient(45deg, var(--primary), var(--secondary)); border-radius: 0 0 50px 50px; display: flex; align-items: center; justify-content: center; }
+        .login-body { padding: 40px 20px; text-align: center; }
+        .google-login-btn { 
+            background: white; color: #333; padding: 18px; border-radius: 20px; border: none; 
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 15px; 
+            font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        body, html { 
-            margin: 0; padding: 0; background: var(--bg); color: var(--t-main); 
-            height: 100vh; overflow: hidden;
-        }
-
-        /* شاشات الانتقال */
-        .screen {
-            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
-            display: none; flex-direction: column; animation: fadeIn 0.4s ease;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: scale(1); } }
-
-        .active-screen { display: flex; }
-
-        /* شاشة الدخول (Google Login) */
-        #screen-login {
-            background: linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%);
-            align-items: center; justify-content: center; padding: 30px;
-        }
-
-        .login-card {
-            background: var(--surface); padding: 40px 30px; border-radius: 30px;
-            width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--surface-light);
-            box-shadow: var(--shadow);
-        }
-
-        .google-btn {
-            background: white; color: #000; padding: 15px; border-radius: 15px;
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            font-weight: 700; cursor: pointer; border: none; width: 100%;
-            transition: 0.3s; margin-top: 25px;
-        }
-        .google-btn:hover { background: #f1f1f1; transform: translateY(-3px); }
-
-        /* الواجهة الرئيسية */
-        #app-layout { height: 100%; display: flex; flex-direction: column; }
+        /* تصميم الواجهة الرئيسية */
+        #map-view { flex: 1; width: 100%; position: relative; }
+        header { padding: 15px 20px; background: var(--card-bg); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass); z-index: 1000; }
         
-        header {
-            padding: 15px 20px; background: var(--surface); display: flex;
-            justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--surface-light); z-index: 10;
-        }
+        /* البطاقات المنبثقة */
+        .glass-card { background: var(--card-bg); backdrop-filter: blur(15px); border: 1px solid var(--glass); border-radius: 30px; padding: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .bottom-action-panel { position: absolute; bottom: 0; left: 0; right: 0; z-index: 1001; }
 
-        .profile-section { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--p); }
+        /* نظام الرادار والمزايدة */
+        .radar-box { text-align: center; padding: 40px 20px; background: var(--dark); height: 100%; }
+        .radar-wave { width: 150px; height: 150px; border: 4px solid var(--primary); border-radius: 50%; margin: 40px auto; position: relative; animation: sonar 2s infinite; }
+        @keyframes sonar { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
 
-        .wallet-pill {
-            background: rgba(16, 185, 129, 0.1); border: 1px solid var(--s);
-            padding: 6px 15px; border-radius: 50px; color: var(--s);
-            font-weight: 700; cursor: pointer; transition: 0.2s;
-        }
-        .wallet-pill:active { transform: scale(0.95); }
+        /* قائمة عروض الأسعار */
+        .offers-scroll { padding: 10px; max-height: 50vh; overflow-y: auto; }
+        .driver-offer { background: var(--glass); border-radius: 20px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-right: 5px solid var(--primary); }
 
-        #main-map { flex: 1; width: 100%; z-index: 1; }
+        /* شاشة المحفظة والمبالغ */
+        .wallet-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-item { background: var(--glass); padding: 15px; border-radius: 15px; text-align: center; }
 
-        /* صندوق الطلب السفلي */
-        .bottom-panel {
-            background: var(--surface); padding: 25px; border-radius: 35px 35px 0 0;
-            box-shadow: 0 -15px 40px rgba(0,0,0,0.6); z-index: 5;
-            border-top: 1px solid var(--surface-light);
-        }
+        /* نظام الدردشة */
+        #chat-window { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: none; flex-direction: column; }
+        .chat-header { padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--glass); }
+        .chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .bubble { padding: 12px 18px; border-radius: 20px; max-width: 80%; font-size: 15px; }
+        .bubble-rider { background: var(--primary); align-self: flex-start; }
+        .bubble-driver { background: var(--card-bg); align-self: flex-end; }
 
-        .input-wrapper {
-            background: var(--surface-light); border-radius: 18px;
-            display: flex; align-items: center; padding: 12px 18px; margin-bottom: 15px;
-            border: 1px solid transparent; transition: 0.3s;
-        }
-        .input-wrapper:focus-within { border-color: var(--p); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
-        
-        .input-wrapper input {
-            background: transparent; border: none; color: white; flex: 1;
-            padding: 5px; font-size: 16px; font-weight: 600;
-        }
+        /* شاشة التقييم (بعد الرحلة) */
+        #rating-screen { display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
+        .star-rating { font-size: 40px; color: var(--warning); cursor: pointer; display: flex; gap: 10px; }
 
-        .btn-main {
-            background: var(--p); color: white; border: none; padding: 18px;
-            border-radius: 20px; width: 100%; font-size: 18px; font-weight: 800;
-            cursor: pointer; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
-            transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-main:active { transform: scale(0.97); }
-        .btn-main:disabled { background: var(--t-dim); cursor: not-allowed; }
-
-        /* رادار العروض */
-        #radar-screen {
-            background: rgba(11, 15, 26, 0.98); z-index: 2000;
-            padding: 30px 20px;
-        }
-
-        .radar-animation {
-            width: 120px; height: 120px; border: 4px solid var(--p);
-            border-radius: 50%; position: relative; margin: 50px auto;
-            animation: radarPulse 2s infinite;
-        }
-        @keyframes radarPulse {
-            0% { transform: scale(0.5); opacity: 1; box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-            100% { transform: scale(1.5); opacity: 0; box-shadow: 0 0 0 50px rgba(99, 102, 241, 0); }
-        }
-
-        .offers-container {
-            flex: 1; overflow-y: auto; width: 100%; max-width: 500px;
-            display: flex; flex-direction: column; gap: 15px; margin-top: 20px;
-        }
-
-        .offer-card {
-            background: var(--surface-light); border-radius: 22px; padding: 20px;
-            border: 1px solid rgba(255,255,255,0.05); display: flex;
-            justify-content: space-between; align-items: center;
-            animation: slideIn 0.4s ease;
-        }
-        @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        /* شاشة المحفظة */
-        .modal-screen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-            z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-content {
-            background: var(--surface); width: 100%; max-width: 450px;
-            border-radius: 30px; padding: 30px; border: 1px solid var(--surface-light);
-        }
-
-        /* تتبع الرحلة النشطة */
-        .active-ride-info {
-            position: absolute; top: 100px; left: 20px; right: 20px;
-            background: var(--surface); padding: 20px; border-radius: 20px;
-            z-index: 100; border-left: 5px solid var(--p); display: flex;
-            justify-content: space-between; align-items: center;
-            box-shadow: var(--shadow);
-        }
-
-        /* الدردشة الاحترافية */
-        #chat-panel {
-            position: fixed; bottom: 0; height: 80vh; width: 100%;
-            background: var(--bg); z-index: 4000; border-radius: 35px 35px 0 0;
-            display: none; flex-direction: column; border-top: 2px solid var(--p);
-        }
-
-        #messages-view { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 12px; }
-        .msg { padding: 12px 18px; border-radius: 20px; max-width: 75%; font-weight: 500; }
-        .msg-me { background: var(--p); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .msg-them { background: var(--surface-light); align-self: flex-end; border-bottom-right-radius: 2px; }
-
-        /* شريط الحالة والتحميل */
-        .loading-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--p); width: 0%; z-index: 9999; transition: 0.3s; }
+        /* شاشة سجل الرحلات */
+        #history-panel { display: none; position: fixed; right: 0; top: 0; width: 80%; height: 100%; background: var(--card-bg); z-index: 5000; padding: 20px; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
-    <div class="loading-bar" id="top-loader"></div>
-
-    <div id="screen-login" class="screen active-screen">
-        <div class="login-card">
-            <h1 style="font-weight: 900; font-size: 38px; color: var(--p); margin: 0;">E-MAX</h1>
-            <p style="color: var(--t-dim);">أذكى طريقة للتنقل في الإسكندرية</p>
-            <div style="margin: 40px 0;">
-                <img src="https://cdn-icons-png.flaticon.com/512/2099/2099044.png" width="120" alt="Taxi">
-            </div>
-            <button class="google-btn" onclick="core.login()">
-                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="20">
-                تسجيل الدخول باستخدام جوجل
+    <div id="page-login" class="page page-active">
+        <div class="login-hero">
+            <h1 style="font-size: 60px; font-weight: 900; letter-spacing: 5px;">E-MAX</h1>
+        </div>
+        <div class="login-body">
+            <h2 style="margin: 0;">أهلاً بك يا بطل</h2>
+            <p style="color: var(--text-muted); margin-bottom: 40px;">سجل دخولك لتبدأ أولى رحلاتك اليوم</p>
+            <button class="google-login-btn" onclick="megaApp.googleSignIn()">
+                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="25">
+                دخول عبر حساب جوجل
             </button>
-            <p style="font-size: 12px; color: var(--t-dim); margin-top: 30px;">بمتابعتك أنت توافق على شروط خدمة E-MAX</p>
+            <div style="margin-top: 50px; font-size: 12px; color: var(--text-muted);">
+                تطبيق E-MAX هو مشروع إياد إيهاب <br> Alexandria, Egypt 2026
+            </div>
         </div>
     </div>
 
-    <div id="screen-app" class="screen">
-        <div id="app-layout">
-            <header>
-                <div class="profile-section">
-                    <img id="user-img" class="avatar" src="" alt="User">
-                    <div>
-                        <div id="user-name" style="font-weight: 700; font-size: 14px;">...</div>
-                        <div style="font-size: 10px; color: var(--t-dim);">راكب ذهبي ⭐</div>
-                    </div>
-                </div>
-                <div class="wallet-pill" onclick="core.openWallet()">
-                    <span id="user-balance">0</span> ج.م
-                </div>
-            </header>
+    <div id="page-home" class="page">
+        <header>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img id="user-photo" src="" style="width: 45px; border-radius: 50%; border: 2px solid var(--primary);">
+                <span id="user-name" style="font-weight: 700;">...</span>
+            </div>
+            <div class="wallet-pill" style="background: var(--success); padding: 8px 15px; border-radius: 50px; font-weight: 800; cursor: pointer;" onclick="megaApp.toggleWallet(true)">
+                <span id="balance-val">0</span> ج.م
+            </div>
+        </header>
 
-            <div id="main-map"></div>
-
-            <div id="active-ride-status" class="active-ride-info" style="display: none;">
+        <div id="map-view">
+            <div id="active-driver-card" style="display:none; position:absolute; top:20px; left:20px; right:20px; z-index:100; background:var(--card-bg); padding:15px; border-radius:20px; display:flex; align-items:center; gap:15px;">
+                <div style="width:50px; height:50px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px;">🚕</div>
                 <div>
-                    <div id="driver-status-text" style="font-weight: 800; color: var(--p);">الكابتن في الطريق...</div>
-                    <div id="active-driver-name" style="font-size: 14px;">...</div>
-                </div>
-                <div id="eta-box" style="background: var(--surface-light); padding: 10px; border-radius: 12px; text-align: center;">
-                    <div style="font-size: 10px;">السعر</div>
-                    <b id="ride-price-val" style="color: var(--gold);">0 ج.م</b>
+                    <b id="active-driver-label">جاري تتبع السائق...</b><br>
+                    <small id="active-ride-price" style="color:var(--warning)"></small>
                 </div>
             </div>
+        </div>
 
-            <div class="bottom-panel">
-                <div class="input-wrapper">
-                    <span>📍</span>
-                    <input type="text" id="dest-input" placeholder="رايح فين النهاردة؟">
+        <div class="bottom-action-panel">
+            <div class="glass-card" style="border-radius: 40px 40px 0 0;">
+                <div style="background: var(--glass); border-radius: 20px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                    <span>🏁</span>
+                    <input type="text" id="dest-val" placeholder="اكتب وجهتك الآن..." style="background: none; border: none; color: white; width: 100%; font-size: 18px; outline: none;">
                 </div>
                 
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <div class="input-wrapper" style="flex: 1; margin: 0;">
-                        <span>💳</span>
-                        <select id="pay-method" style="background:none; border:none; color:white; width:100%; font-family:inherit;">
-                            <option value="cash">دفع كاش</option>
-                            <option value="wallet">محفظة E-MAX</option>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div style="background: var(--glass); padding: 10px; border-radius: 15px; text-align: center;">
+                        <span style="display: block; font-size: 10px; color: var(--text-muted);">طريقة الدفع</span>
+                        <select id="pay-type" style="background:none; border:none; color:white; font-weight:700;">
+                            <option value="cash">💵 كاش</option>
+                            <option value="wallet">💳 محفظة</option>
                         </select>
                     </div>
+                    <button class="btn" style="background: var(--glass); border: none; color: white; border-radius: 15px;" onclick="megaApp.toggleHistory(true)">📜 السجل</button>
                 </div>
 
-                <button id="btn-request" class="btn-main" onclick="core.startSearching()">
-                    <span>🚀</span> اطلب رحلتك الآن
+                <button id="main-order-btn" style="background: var(--primary); color: white; padding: 20px; border-radius: 25px; border: none; width: 100%; font-size: 20px; font-weight: 900; box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);" onclick="megaApp.createOrder()">
+                    اطلب رحلتك الآن
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="radar-screen" class="screen">
-        <div style="text-align: center; margin-top: 50px;">
-            <h2 style="margin: 0; color: var(--p);">جاري البحث عن كباتن</h2>
-            <p style="color: var(--t-dim);">نحن نرسل طلبك لأفضل السائقين حولك</p>
-        </div>
-        
-        <div class="radar-animation"></div>
+    <div id="page-radar" class="page">
+        <div class="radar-box">
+            <div class="radar-wave"></div>
+            <h2>رادار البحث نشط</h2>
+            <p style="color: var(--warning);">الكباتن في الإسكندرية يراجعون طلبك الآن</p>
+            
+            <div id="offers-list" class="offers-scroll">
+                </div>
 
-        <div class="offers-container" id="offers-list">
-            </div>
-
-        <div style="padding: 20px; width: 100%; max-width: 400px; margin: auto;">
-            <button class="btn-main" style="background: var(--danger);" onclick="core.cancelSearch()">إلغاء الطلب</button>
+            <button style="background: var(--danger); color: white; padding: 15px; border-radius: 15px; border: none; width: 80%; margin-top: 20px;" onclick="megaApp.cancelOrder()">إلغاء الطلب</button>
         </div>
     </div>
 
-    <div id="modal-wallet" class="modal-screen">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-                <h3 style="margin:0">محفظتي الرقمية</h3>
-                <button onclick="core.closeWallet()" style="background:none; border:none; color:white; font-size:24px;">✕</button>
+    <div id="page-wallet" class="page" style="background: rgba(0,0,0,0.95);">
+        <div style="padding: 40px 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h1>المحفظة الرقمية</h1>
+                <span onclick="megaApp.toggleWallet(false)" style="font-size: 30px;">✕</span>
             </div>
             
-            <div style="background: var(--bg); padding: 30px; border-radius: 25px; text-align: center; margin-bottom: 25px; border: 1px solid var(--surface-light);">
-                <div style="font-size: 14px; color: var(--t-dim);">الرصيد المتاح</div>
-                <div style="font-size: 42px; font-weight: 900; color: var(--s);"><span class="current-balance">0</span> <small style="font-size: 16px;">ج.م</small></div>
+            <div class="glass-card" style="text-align: center; margin-bottom: 20px; background: linear-gradient(135deg, var(--primary), var(--secondary));">
+                <p style="margin: 0;">الرصيد الكلي</p>
+                <h1 style="font-size: 50px; margin: 10px 0;"><span id="wallet-amt">0</span> <small style="font-size: 20px;">ج.م</small></h1>
             </div>
 
-            <div style="text-align: right;">
-                <b style="color: var(--gold); display: block; margin-bottom: 10px;">إيداع رصيد (فودافون كاش)</b>
-                <p style="font-size: 13px; color: var(--t-dim);">1. حول المبلغ لرقمنا: 010XXXXXXXX<br>2. ادخل رقم العملية تحت لتأكيد الطلب</p>
-                <div class="input-wrapper">
-                    <input type="text" id="wallet-ref" placeholder="رقم العملية المكون من 12 رقم">
-                </div>
-                <button class="btn-main" onclick="core.depositRequest()" style="background: var(--s);">إرسال طلب إيداع</button>
+            <div class="wallet-stats">
+                <div class="stat-item"><b>0</b><br><small>رحلات</small></div>
+                <div class="stat-item"><b>0</b><br><small>نقاط تميز</small></div>
+            </div>
+
+            <div class="glass-card">
+                <h3>شحن رصيد</h3>
+                <p style="font-size: 13px; color: var(--text-muted);">حول لأي محفظة إلكترونية للرقم: <b>010XXXXXXXX</b></p>
+                <input type="text" id="charge-ref" placeholder="رقم عملية التحويل" style="width: 100%; padding: 15px; border-radius: 10px; background: var(--dark); border: 1px solid var(--glass); color: white; margin-bottom: 15px;">
+                <button style="width: 100%; padding: 15px; background: var(--success); border: none; border-radius: 10px; font-weight: 800;" onclick="megaApp.submitDeposit()">تأكيد الشحن</button>
             </div>
         </div>
     </div>
 
-    <div id="chat-panel">
-        <div style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-light);">
-            <div style="font-weight: 700;">دردشة مع الكابتن</div>
-            <button onclick="core.toggleChat(false)" style="background: none; border: none; color: var(--danger); font-size: 18px; font-weight: 700;">إغلاق</button>
+    <div id="chat-window">
+        <div class="chat-header">
+            <span onclick="megaApp.toggleChat(false)" style="font-size: 24px;">✕</span>
+            <b id="chat-driver-name">الدردشة</b>
         </div>
-        <div id="messages-view"></div>
-        <div style="padding: 20px; background: var(--surface); display: flex; gap: 10px; border-top: 1px solid var(--surface-light);">
-            <input type="text" id="chat-input-msg" class="custom-input" style="flex:1; background: var(--bg); border: none; padding: 15px; border-radius: 15px; color: white;" placeholder="اكتب رسالة...">
-            <button class="btn-main" style="width: 80px;" onclick="core.sendMessage()">إرسال</button>
+        <div id="chat-body" class="chat-body"></div>
+        <div style="padding: 20px; display: flex; gap: 10px; background: var(--card-bg);">
+            <input type="text" id="chat-in" placeholder="اكتب رسالة..." style="flex: 1; padding: 15px; border-radius: 15px; background: var(--dark); border: none; color: white;">
+            <button onclick="megaApp.sendChat()" style="background: var(--primary); padding: 15px; border-radius: 15px; border: none; color: white;">إرسال</button>
         </div>
     </div>
 
-    <div id="ride-controls" style="position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 5000; display: none; gap: 10px;">
-        <button class="btn-main" style="flex: 1;" onclick="core.toggleChat(true)">💬 دردشة</button>
-        <a id="driver-call-link" href="#" class="btn-main" style="flex: 1; background: var(--s); text-decoration: none;">📞 اتصال</a>
+    <div id="rating-screen" class="page">
+        <div class="glass-card" style="text-align: center;">
+            <h2>كيف كانت رحلتك؟</h2>
+            <div class="star-rating">
+                <span onclick="megaApp.submitRating(1)">⭐</span>
+                <span onclick="megaApp.submitRating(2)">⭐</span>
+                <span onclick="megaApp.submitRating(3)">⭐</span>
+                <span onclick="megaApp.submitRating(4)">⭐</span>
+                <span onclick="megaApp.submitRating(5)">⭐</span>
+            </div>
+            <p style="margin-top: 20px; color: var(--text-muted);">رأيك يساعدنا في تحسين خدمة E-MAX</p>
+        </div>
     </div>
 
     <script>
-        /* =========================================
-           E-MAX CORE ENGINE v2.0
-           Developed for: Eyad Ehab Ibrahim
-           =========================================
+        /*
+           نظام E-MAX MEGA PRO | المحرك الأساسي
+           تحذير: هذا الكود مصمم للتعامل مع كميات ضخمة من البيانات الحية
         */
 
         const firebaseConfig = {
             apiKey: "AIzaSyDvoxRxDa3WiUsCIdZmpy8w8hKRfgG4WdA",
             databaseURL: "https://e-max-d7438-default-rtdb.firebaseio.com/",
-            projectId: "e-max-d7438",
         };
 
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
         const auth = firebase.auth();
 
-        const core = {
+        const megaApp = {
             user: null,
             userData: null,
             map: null,
-            riderMarker: null,
+            myMarker: null,
             driverMarker: null,
-            currentLocation: null,
-            activeRide: null,
-            watchID: null,
+            myLoc: null,
+            activeRideId: null,
 
             init() {
-                this.updateLoader(30);
                 auth.onAuthStateChanged(u => {
-                    this.updateLoader(100);
                     if (u) {
                         this.user = u;
                         this.syncProfile();
                     } else {
-                        this.switchScreen('screen-login');
+                        this.showPage('page-login');
                     }
                 });
             },
 
-            login() {
+            googleSignIn() {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                auth.signInWithPopup(provider).catch(e => alert("خطأ في تسجيل الدخول: " + e.message));
+                auth.signInWithPopup(provider);
             },
 
             syncProfile() {
                 rtdb.ref('users/' + this.user.uid).on('value', snap => {
                     this.userData = snap.val();
                     if (!this.userData) {
-                        // إنشاء حساب جديد لأول مرة
                         rtdb.ref('users/' + this.user.uid).set({
                             name: this.user.displayName,
-                            email: this.user.email,
                             photo: this.user.photoURL,
                             balance: 0,
-                            trips: 0,
-                            createdAt: Date.now()
+                            history: []
                         });
                     } else {
-                        this.updateUI();
-                        this.switchScreen('screen-app');
+                        this.showPage('page-home');
+                        this.updateHeader();
                         this.initMap();
-                        this.monitorActiveRides();
+                        this.monitorRides();
                     }
                 });
-            },
-
-            updateUI() {
-                document.getElementById('user-name').innerText = this.userData.name;
-                document.getElementById('user-img').src = this.userData.photo;
-                document.querySelectorAll('.current-balance').forEach(el => el.innerText = this.userData.balance);
-                document.getElementById('user-balance').innerText = this.userData.balance;
             },
 
             initMap() {
                 if (this.map) return;
-                this.map = L.map('main-map', { zoomControl: false }).setView([31.2001, 29.9187], 13);
-                L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.map);
-
-                if (navigator.geolocation) {
-                    this.watchID = navigator.geolocation.watchPosition(p => {
-                        this.currentLocation = { lat: p.coords.latitude, lng: p.coords.longitude };
-                        if (!this.riderMarker) {
-                            this.riderMarker = L.circleMarker([this.currentLocation.lat, this.currentLocation.lng], {
-                                radius: 12, color: '#6366f1', fillOpacity: 0.8, weight: 4
-                            }).addTo(this.map);
-                        } else {
-                            this.riderMarker.setLatLng([this.currentLocation.lat, this.currentLocation.lng]);
-                        }
-                        this.map.panTo([this.currentLocation.lat, this.currentLocation.lng]);
-                    }, null, { enableHighAccuracy: true });
-                }
+                this.map = L.map('map-view', { zoomControl: false }).setView([31.2, 29.9], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+                
+                navigator.geolocation.watchPosition(p => {
+                    this.myLoc = { lat: p.coords.latitude, lng: p.coords.longitude };
+                    if (!this.myMarker) {
+                        this.myMarker = L.circleMarker([this.myLoc.lat, this.myLoc.lng], { radius: 12, color: '#8b5cf6', fillOpacity: 0.8 }).addTo(this.map);
+                    } else {
+                        this.myMarker.setLatLng([this.myLoc.lat, this.myLoc.lng]);
+                    }
+                    this.map.panTo([this.myLoc.lat, this.myLoc.lng]);
+                }, null, { enableHighAccuracy: true });
             },
 
-            startSearching() {
-                const dest = document.getElementById('dest-input').value;
-                const pay = document.getElementById('pay-method').value;
+            createOrder() {
+                const dest = document.getElementById('dest-val').value;
+                if (!dest) return alert("الوجهة يا بطل!");
 
-                if (!dest) return alert("من فضلك حدد الوجهة أولاً");
-                if (pay === 'wallet' && this.userData.balance <= 0) return alert("عذراً، رصيد محفظتك غير كافي");
-
-                this.updateLoader(50);
                 const rideRef = rtdb.ref('rides').push();
-                this.activeRide = { id: rideRef.key, destination: dest };
+                this.activeRideId = rideRef.key;
 
                 rideRef.set({
                     riderId: this.user.uid,
                     riderName: this.userData.name,
-                    riderPhoto: this.userData.photo,
                     destination: dest,
-                    payMethod: pay,
                     status: 'searching',
-                    riderLoc: this.currentLocation,
-                    createdAt: Date.now()
+                    payMethod: document.getElementById('pay-type').value,
+                    riderLoc: this.myLoc,
+                    time: Date.now()
                 }).then(() => {
-                    this.updateLoader(100);
-                    this.switchScreen('radar-screen');
-                    this.listenForOffers();
+                    this.showPage('page-radar');
+                    this.listenForBids();
                 });
             },
 
-            listenForOffers() {
-                rtdb.ref(`rides/${this.activeRide.id}/offers`).on('value', snap => {
+            listenForBids() {
+                rtdb.ref(`rides/${this.activeRideId}/offers`).on('value', snap => {
                     const list = document.getElementById('offers-list');
                     list.innerHTML = "";
-                    
-                    if (!snap.exists()) {
-                        list.innerHTML = `<p style="text-align:center; color:var(--t-dim)">في انتظار الكباتن القريبين...</p>`;
-                        return;
-                    }
-
                     snap.forEach(child => {
-                        const off = child.val();
-                        const card = document.createElement('div');
-                        card.className = "offer-card";
-                        card.innerHTML = `
-                            <div>
-                                <div style="font-weight:700">كابتن ${off.driverName}</div>
-                                <div style="color:var(--s); font-size:18px; font-weight:900;">${off.offerPrice} ج.م</div>
-                            </div>
-                            <button class="btn-main" style="width:auto; padding:10px 25px;" onclick="core.acceptBid('${child.key}', ${off.offerPrice}, '${off.driverId}', '${off.driverName}', '${off.driverPhone}')">قبول</button>
+                        const b = child.val();
+                        const div = document.createElement('div');
+                        div.className = "driver-offer";
+                        div.innerHTML = `
+                            <div><b>كابتن ${b.driverName}</b><br><small>تقييم: ⭐ 4.9</small></div>
+                            <div style="text-align:center;"><b style="color:var(--success)">${b.offerPrice} ج.م</b></div>
+                            <button onclick="megaApp.acceptBid('${child.key}', ${b.offerPrice}, '${b.driverId}', '${b.driverName}', '${b.driverPhone}')" style="background:var(--success); border:none; color:white; padding:10px 15px; border-radius:10px;">قبول</button>
                         `;
-                        list.appendChild(card);
+                        list.appendChild(div);
                     });
                 });
             },
 
-            acceptBid(offerKey, price, dId, dName, dPhone) {
-                this.updateLoader(60);
-                rtdb.ref(`rides/${this.activeRide.id}`).update({
+            acceptBid(key, price, dId, dName, dPhone) {
+                rtdb.ref(`rides/${this.activeRideId}`).update({
                     status: 'accepted',
                     driverId: dId,
                     driverName: dName,
                     driverPhone: dPhone,
                     finalPrice: price
-                }).then(() => {
-                    this.updateLoader(100);
-                    this.switchScreen('screen-app');
-                });
+                }).then(() => this.showPage('page-home'));
             },
 
-            monitorActiveRides() {
+            monitorRides() {
                 rtdb.ref('rides').orderByChild('riderId').equalTo(this.user.uid).on('value', snap => {
                     snap.forEach(child => {
-                        const ride = child.val();
-                        if (ride.status === 'accepted') {
-                            this.activeRide = { id: child.key, ...ride };
-                            this.showActiveUI(true);
-                            if (ride.driverLoc) this.updateDriverMarker(ride.driverLoc);
+                        const r = child.val();
+                        if (r.status === 'accepted') {
+                            this.activeRideId = child.key;
+                            this.updateActiveRideUI(r);
+                            if (r.driverLoc) this.updateDriverLoc(r.driverLoc);
                             this.syncChat();
-                        } else if (ride.status === 'completed') {
-                            this.showActiveUI(false);
-                            alert("وصلتم بالسلامة! تم إنهاء الرحلة بنجاح.");
-                            rtdb.ref(`rides/${child.key}`).remove();
-                            location.reload();
+                        } else if (r.status === 'completed') {
+                            this.showPage('rating-screen');
                         }
                     });
                 });
             },
 
-            updateDriverMarker(loc) {
+            updateActiveRideUI(r) {
+                const card = document.getElementById('active-driver-card');
+                card.style.display = 'flex';
+                document.getElementById('active-driver-label').innerText = "الكابتن " + r.driverName + " في الطريق";
+                document.getElementById('active-ride-price').innerText = "الحساب: " + r.finalPrice + " ج.م";
+            },
+
+            updateDriverLoc(loc) {
                 if (!this.driverMarker) {
-                    const carIcon = L.icon({
-                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png',
-                        iconSize: [40, 40]
-                    });
-                    this.driverMarker = L.marker([loc.lat, loc.lng], { icon: carIcon }).addTo(this.map);
+                    this.driverMarker = L.marker([loc.lat, loc.lng]).addTo(this.map);
                 } else {
                     this.driverMarker.setLatLng([loc.lat, loc.lng]);
                 }
             },
 
-            showActiveUI(show) {
-                const statusBox = document.getElementById('active-ride-status');
-                const controls = document.getElementById('ride-controls');
-                const booking = document.querySelector('.bottom-panel');
-
-                if (show) {
-                    statusBox.style.display = 'flex';
-                    controls.style.display = 'flex';
-                    booking.style.display = 'none';
-                    document.getElementById('active-driver-name').innerText = "الكابتن: " + this.activeRide.driverName;
-                    document.getElementById('ride-price-val').innerText = this.activeRide.finalPrice + " ج.م";
-                    document.getElementById('driver-call-link').href = "tel:" + this.activeRide.driverPhone;
-                } else {
-                    statusBox.style.display = 'none';
-                    controls.style.display = 'none';
-                    booking.style.display = 'block';
-                }
-            },
-
-            // نظام المحفظة
-            depositRequest() {
-                const ref = document.getElementById('wallet-ref').value;
-                if (ref.length < 10) return alert("برجاء إدخال رقم عملية صحيح");
-                
-                rtdb.ref('admin_notices/deposits').push({
-                    userId: this.user.uid,
-                    userName: this.user.displayName,
-                    reference: ref,
-                    status: 'pending',
-                    timestamp: Date.now()
-                });
-                alert("تم إرسال الطلب لإياد! سيتم إضافة الرصيد بعد مراجعة العملية.");
-                this.closeWallet();
-            },
-
-            // نظام الدردشة
-            sendMessage() {
-                const input = document.getElementById('chat-input-msg');
-                const text = input.value.trim();
-                if (!text) return;
-
-                rtdb.ref(`chats/${this.activeRide.id}`).push({
-                    sender: 'rider',
-                    text: text,
-                    time: Date.now()
-                });
-                input.value = "";
+            sendChat() {
+                const val = document.getElementById('chat-in').value;
+                if (!val) return;
+                rtdb.ref(`chats/${this.activeRideId}`).push({ sender: 'rider', text: val });
+                document.getElementById('chat-in').value = "";
             },
 
             syncChat() {
-                rtdb.ref(`chats/${this.activeRide.id}`).on('child_added', snap => {
+                rtdb.ref(`chats/${this.activeRideId}`).on('child_added', snap => {
                     const m = snap.val();
-                    const view = document.getElementById('messages-view');
+                    const body = document.getElementById('chat-body');
                     const div = document.createElement('div');
-                    div.className = `msg ${m.sender === 'rider' ? 'msg-me' : 'msg-them'}`;
+                    div.className = `bubble bubble-${m.sender}`;
                     div.innerText = m.text;
-                    view.appendChild(div);
-                    view.scrollTop = view.scrollHeight;
+                    body.appendChild(div);
+                    body.scrollTop = body.scrollHeight;
                 });
             },
 
-            // وظائف المساعدة
-            switchScreen(id) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
-                document.getElementById(id).classList.add('active-screen');
+            submitDeposit() {
+                const ref = document.getElementById('charge-ref').value;
+                if (!ref) return;
+                rtdb.ref('admin_notices/deposits').push({ uid: this.user.uid, ref, name: this.userData.name });
+                alert("تم الإرسال للأدمن إياد!");
             },
 
-            updateLoader(val) {
-                document.getElementById('top-loader').style.width = val + "%";
+            submitRating(stars) {
+                alert("شكراً لتقييمك: " + stars + " نجوم");
+                rtdb.ref(`rides/${this.activeRideId}`).remove();
+                location.reload();
             },
 
-            openWallet() { document.getElementById('modal-wallet').style.display = 'flex'; },
-            closeWallet() { document.getElementById('modal-wallet').style.display = 'none'; },
-            toggleChat(show) { document.getElementById('chat-panel').style.display = show ? 'flex' : 'none'; },
-            cancelSearch() {
-                if(confirm("هل تريد إلغاء البحث عن رحلة؟")) {
-                    rtdb.ref(`rides/${this.activeRide.id}`).remove();
-                    location.reload();
-                }
-            }
+            showPage(id) {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('page-active'));
+                document.getElementById(id).classList.add('page-active');
+            },
+
+            updateHeader() {
+                document.getElementById('user-name').innerText = this.userData.name;
+                document.getElementById('user-photo').src = this.userData.photo;
+                document.getElementById('balance-val').innerText = this.userData.balance;
+                document.getElementById('wallet-amt').innerText = this.userData.balance;
+            },
+
+            toggleWallet(s) { this.showPage(s ? 'page-wallet' : 'page-home'); },
+            toggleChat(s) { document.getElementById('chat-window').style.display = s ? 'flex' : 'none'; },
+            cancelOrder() { rtdb.ref(`rides/${this.activeRideId}`).remove(); location.reload(); }
         };
 
-        // انطلاق التطبيق
-        core.init();
+        megaApp.init();
 
     </script>
 </body>
